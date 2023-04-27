@@ -12,7 +12,7 @@
 - [TERMINATING THE PROJECT](#terminating-the-project)
 
 ### OVERVIEW
-This project is a minimalist __video sharing platform__ with powerful capabilities:
+This project is a minimalist __video sharing platform__ with powerful capabilities:\
     * User upload of pre-recorded videos
     * A live-streaming platform with video on demand capabilites
     * A podcast platform
@@ -22,13 +22,13 @@ The services offered are similar to [youtube](https://youtube.com) streaming cap
 
 
 ### REQUIREMENTS
-The requirements to run the project on a local machine are
+The requirements to run the project on a local machine are\
     - __DOCKER__:The application is fully containerized with customized *docker* images and docker-compose local yaml file
                  with configurations of conainers and images. You can download and install docker on your local host at
-                 [docker](https://www.docker.com/products/docker-desktop/)
-    - __GIT__:This is solely for cloning the project and for anyone to extend the capabilites of the application.
+                 [docker](https://www.docker.com/products/docker-desktop/)\
+    - __GIT__:This is solely for cloning the project and for anyone to extend the capabilites of the application.\
 
-Some of the services offered on the docker-compose are
+Some of the services offered on the docker-compose are\
     - Redis Stack
     - Elasticsearch
     - django
@@ -101,7 +101,7 @@ The setup below represents the project structure
 ```
 
 ### INSTALLATION
-To install the project
+To install the project\
     1 First clone the repository
     2. Navigate to the project directory and run the  following command
         ```docker-compose -f local.yml up --build```
