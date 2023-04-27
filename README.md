@@ -22,7 +22,7 @@ The services offered are similar to [youtube](https://youtube.com) streaming cap
 
 
 ### REQUIREMENTS
-The requirements to run the project on a local machine are:
+The requirements to run the project on a local machine are
     - __DOCKER__:The application is fully containerized with customized *docker* images and docker-compose local yaml file
                  with configurations of conainers and images. You can download and install docker on your local host at
                  [docker](https://www.docker.com/products/docker-desktop/)
