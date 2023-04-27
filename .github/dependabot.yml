@@ -1,0 +1,17 @@
+
+version: 2
+
+updates:
+
+  # maintain dependencies for pip
+  - package-ecosystem: "pip"
+    directory: "./"
+    schedule:
+      interval: "monthly"
+
+
+  # maintain dependemcies for npm
+  - package-ecosystem: npm
+    directory: "./frontend"
+    schedule:
+      interval: "monthly"
