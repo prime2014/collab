@@ -6,5 +6,6 @@ pytest.cache
 **/migrations/
 **/.env
 rod
-media
+media'
+/api/my_r10_skills.webm
 
