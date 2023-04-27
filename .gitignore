@@ -1,0 +1,10 @@
+.env
+__pycache__/
+pytest.cache
+**/node_modules
+
+**/migrations/
+**/.env
+rod
+media
+
