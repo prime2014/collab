@@ -5,6 +5,7 @@ from django.utils import timezone
 from django.conf import settings
 from django.core.validators import MinValueValidator
 import uuid
+import redis
 
 
 class Channel(models.Model):
@@ -132,6 +133,7 @@ class VideoContent(models.Model):
     def __str__(self):
         return self.title
 
+    # The following properties are for customizing elasticsearch fields
     @property
     def indexing_id(self):
         return self.id._hashid
@@ -143,6 +145,7 @@ class VideoContent(models.Model):
 
     @property
     def thumbnail_indexing(self):
+
         if self.thumbnail:
             return self.thumbnail.url
 
@@ -163,6 +166,7 @@ class Comments(models.Model):
     flagged = models.BooleanField(
         default=False
     )
+    
     pub_date = models.DateTimeField(
         default=timezone.now,
         editable=False
@@ -170,4 +174,3 @@ class Comments(models.Model):
 
     def __str__(self):
         return self.comment
-

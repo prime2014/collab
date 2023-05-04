@@ -53,6 +53,9 @@ const VideoDetail = (props) => {
 
 
 
+
+
+
     useEffect(()=>{
 
         props.getSingleVideo(video_id).then(resp=>{
@@ -167,6 +170,7 @@ const VideoDetail = (props) => {
     }
 
 
+
     const sourceOpen = async event => {
         URL.revokeObjectURL(videoRef.current.src);
 
@@ -185,7 +189,7 @@ const VideoDetail = (props) => {
             sourceBuffer = mediaSource.addSourceBuffer(mimeCodec)
 
             sourceBuffer.appendBuffer(new Uint8Array(vidBlob));
-
+            console.log("SEEKABLE: ", videoRef.current.seekable)
             sourceBuffer.addEventListener('updateend', function (e) {
                 if (!sourceBuffer.updating && mediaSource.readyState === 'open') {
 
@@ -437,6 +441,12 @@ const VideoDetail = (props) => {
                 <div className="video_content">
                     <div className="left-section-video">
                         <div ref={videoContainer} className="video-container paused" data-volume="high">
+                            <div className="lds-ring">
+                              <div></div>
+                              <div></div>
+                              <div></div>
+                              <div></div>
+                            </div>
                             <div className="video-controls-container">
 
                                 <div onMouseUp={toggleScrubbing} onClick={updateTimeline} onMouseMove={handleTimelineUpdate} ref={timelineContainer} onMouseDown={toggleScrubbing} className="timeline-container">

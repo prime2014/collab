@@ -10,8 +10,14 @@ updates:
       interval: "monthly"
 
 
-  # maintain dependemcies for npm
+  # maintain dependencies for npm
   - package-ecosystem: npm
     directory: "./frontend"
+    schedule:
+      interval: "monthly"
+
+  # maintain dependencies for fastapi
+  - package-ecosystem: pip
+    directory: "./api"
     schedule:
       interval: "monthly"

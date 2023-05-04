@@ -1,5 +1,6 @@
 #!/bin/bash
 
+# delay django until database port is up
 
 echo "Checking if the postgres database is ready"
 
