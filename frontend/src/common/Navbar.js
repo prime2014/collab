@@ -72,6 +72,11 @@ const Navbar = props => {
         setActivate(false)
     }
 
+    const openMenu = () => {
+        var sidebar = document.getElementsByClassName("sidebar")[0];
+        sidebar.classList.toggle("openMenu");
+    }
+
     const showResults = () => searchRef.current.value ? setActivate(true) : null;
 
 
@@ -80,7 +85,7 @@ const Navbar = props => {
             <div className="header">
             <nav className="navigation">
                 <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-                    <MenuIcon style={{ fontSize:30 }}/>
+                    <MenuIcon onClick={openMenu} style={{ fontSize:30 }}/>
                     <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginLeft:"10px" }}>
                         <LiveTvTwoToneIcon style={{ fontSize: 30, color:"red" }} />
                         <span style={{ fontSize:24, fontFamily:"Poppins", fontWeight:"bold", marginLeft: 5 }}>Uncensored</span>

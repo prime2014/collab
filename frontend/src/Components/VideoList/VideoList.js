@@ -16,6 +16,7 @@ import {Link} from "react-router-dom";
 import { MdOutlineVideoLibrary, MdOutlineSubscriptions, MdOutlineWatchLater } from "react-icons/md";
 import { GrHomeRounded } from "react-icons/gr";
 import { RxVideo } from "react-icons/rx";
+import BaseTemplate from "../../common/BaseTemplate";
 
 
 
@@ -34,13 +35,6 @@ const VideoList = props => {
     },[props])
 
 
-    const selectMenu = (event) => {
-        const list_elements = document.getElementsByClassName("menu")
-        Array.from(list_elements).forEach(item=>{
-            item.classList.remove("active");
-        })
-        event.target.classList.add("active");
-    }
 
     const zeroFormatter = new Intl.NumberFormat(undefined, {
         minimumIntegerDigits: 2
@@ -61,7 +55,7 @@ const VideoList = props => {
     const displayVideos = () => {
        return videos.length ? videos.map(item=>{
             return(
-                <div style={{ padding:"0 10px", width:"25%" }}>
+                <div style={{ padding:"0 10px" }}>
                     <div style={{ background:`url(${item.thumbnail})`, backgroundSize:"cover", backgroundRepeat:"no-repeat", objectFit:"cover", height: 180, borderRadius:"10px", width:"100%", position:"relative" }}>
                         <span className="timer">{formatDuration(item.vid_time)}</span>
                     </div>
@@ -87,27 +81,11 @@ const VideoList = props => {
 
 
     return (
-        <Navbar>
-            <div className="bodyTemplate">
-                <aside>
-                    <ul className="sidebar">
-                        <li ref={listRef} onClick={selectMenu} className="menu active"><span><GrHomeRounded fontSize={20} style={{ verticalAlign:"center", margin:0 }} /></span> Home</li>
-                        <li onClick={selectMenu} className="menu"><span><MdOutlineSubscriptions fontSize={25} style={{ verticalAlign:"center", margin:0 }} /></span> Subscriptions</li>
-                        <li onClick={selectMenu} className="menu"><span><MdOutlineVideoLibrary fontSize={25} style={{ verticalAlign:"center", margin:0 }} /></span> Library</li>
-                        <li onClick={selectMenu} className="menu"><span><HistoryIcon style={{ verticalAlign:"center", margin:0 }} /></span> History</li>
-                        <li onClick={selectMenu} className="menu"><span><MdOutlineWatchLater fontSize={25} style={{ verticalAlign:"center", margin:0 }} /></span> Watch Later</li>
-                        <li onClick={selectMenu} className="menu"><span><RxVideo fontSize={30} style={{ verticalAlign:"center", margin:0, fontSize: 25 }} /></span> Your videos</li>
-                        <li onClick={selectMenu} className="menu"><span></span></li>
-                    </ul>
-                </aside>
-                <section>
-                    <div></div>
-                    <div className="videoTab">
-                        {displayVideos()}
-                    </div>
-                </section>
+        <BaseTemplate>
+            <div className="videoTab">
+                {displayVideos()}
             </div>
-        </Navbar>
+        </BaseTemplate>
     );
 }
 
