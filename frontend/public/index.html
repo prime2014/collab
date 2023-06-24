@@ -68,5 +68,15 @@
 
   <!--===============================================================================================-->
     <!---- <script src="assets/js/main.js"></script> -->
+  <script type="text/javascript">
+     if('serviceWorker' in navigator){
+      navigator.serviceWorker.register("./sw.js").then(resp=>{
+
+      }).catch(err=>{
+        console.log("service worker registration failed", err)
+      })
+    }
+
+  </script>
   </body>
 </html>

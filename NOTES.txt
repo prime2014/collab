@@ -1,0 +1,19 @@
+# running python tests
+docker-compose -f testing.yml run --rm django pytest
+
+# running react tests
+docker-compose -f testing.yml run --rm react npm run test
+
+# starting the project
+docker-compose -f local.yml up
+
+# building the project
+docker-compose -f local.yml up --build
+
+# entering into a docker container
+- check the local.yml file for container_name
+docker exec -it <container_name> | <container_id> <shell>
+e.g docker exec -it collab_local_django bash
+
+# to enter with root priviledges (though not recommended)
+docker exec -it -u root collab_local_django bash

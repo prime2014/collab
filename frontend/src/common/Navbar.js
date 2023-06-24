@@ -1,8 +1,9 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import MenuIcon from '@mui/icons-material/Menu';
 import LiveTvTwoToneIcon from '@mui/icons-material/LiveTvTwoTone';
 import NotificationsNoneOutlinedIcon from '@mui/icons-material/NotificationsNoneOutlined';
 import SearchOutlinedIcon from '@mui/icons-material/SearchOutlined';
+import { TfiSearch } from "react-icons/tfi"
 import Avatar from '@mui/material/Avatar';
 import { deepOrange } from '@mui/material/colors';
 import Badge from '@mui/material/Badge';
@@ -18,10 +19,15 @@ import { connect } from "react-redux";
 import { BiVideoPlus } from "react-icons/bi";
 import { BsUpload } from "react-icons/bs";
 import { HiSignal } from "react-icons/hi2";
+import { postAPI } from "../services/post/post.service";
 
 
 const Navbar = props => {
+    const [search, setSearch] = useState([])
+    const [activateSearch, setActivate] = useState(false)
     const navigate = useNavigate()
+    const resultRef = useRef()
+    const searchRef = useRef()
 
     useEffect(()=> {
         console.log(props.credentials)
@@ -36,8 +42,42 @@ const Navbar = props => {
 
     const showCreationMenu = event => event.currentTarget.nextElementSibling.classList.toggle("hideMenu");
 
+    const handleSearch = (event) => {
+        if (event.target.value.length){
+            setActivate(true)
+            postAPI.searchVideos(event.target.value).then(resp=>{
+                setSearch(resp)
+                return;
+            }).catch(err=> console.log(err))
+        } else {
+            setActivate(false)
+            setSearch([])
+            return;
+        }
+
+    }
+
+    const setSearchList = () => {
+        let data = search.map(item=>{
+            return (
+                <li style={{ display:"flex", justifyContent:"left" }}><div style={{ backgroundColor:"#eee", display:"inline-flex", justifyContent:"center", alignItems:"center", width:"30px", height:"30px", borderRadius:"50%" }}><TfiSearch fontSize={20} style={{ verticalAlign: "middle", }} /></div> <span className="search-text">{item.title}</span></li>
+            )
+        })
+        return data;
+    }
+
+
+
+    const hideResults = () => {
+        setActivate(false)
+    }
+
+    const showResults = () => searchRef.current.value ? setActivate(true) : null;
+
+
     return (
-        <React.Fragment>
+        <div>
+            <div className="header">
             <nav className="navigation">
                 <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
                     <MenuIcon style={{ fontSize:30 }}/>
@@ -47,9 +87,19 @@ const Navbar = props => {
                     </div>
                 </div>
                 <form style={{ display:"flex", alignItems:"center" }}>
-                    <input type="search" name="videos" placeholder="Search" style={{ lineHeight: "35px", width:"32vw", borderRadius:"50px 0 0 50px", border:"2px solid #d4d4d4", paddingLeft:"10px", outline:"none" }}/>
+                    <div className="search-input">
+                        <input onFocus={showResults} onBlur={hideResults} ref={searchRef} autoComplete="off" onChange={handleSearch} type="search" className="search" name="videos" placeholder="Search" spellCheck={true}/>
+                        {activateSearch ?
+                        (<div ref={resultRef} className={"search-results"}>
+
+                            <ul className="result-list">
+                                {search.length ? setSearchList() : <></>}
+                            </ul>
+                        </div>) : null}
+                    </div>
+
                     <button style={{ borderRadius:"0 50px 50px 0", border:"none", height: 42, width: 60, backgroundColor:"#F4F4F4", display:"flex", justifyContent:"center", alignItems:"center" }}>
-                        <SearchOutlinedIcon style={{ fontSize: 25 }} />
+                        <TfiSearch fontSize={20} />
                     </button>
                 </form>
                 <div style={{ display:"flex" }}>
@@ -70,10 +120,11 @@ const Navbar = props => {
                     <Avatar sx={{ bgcolor: deepOrange[500] }}>{(props.credntials && props.credentials.values()) && props.credentials.first_name.charAt(0) }</Avatar>
                 </div>
             </nav>
+            </div>
             <div>
                 {props.children}
             </div>
-        </React.Fragment>
+        </div>
 
     );
 }

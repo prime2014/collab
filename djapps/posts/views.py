@@ -3,7 +3,7 @@ from django_elasticsearch_dsl_drf.constants import (
     LOOKUP_QUERY_CONTAINS,
     LOOKUP_QUERY_STARTSWITH,
     LOOKUP_FILTER_EXISTS,
-    SUGGESTER_COMPLETION
+    SUGGESTER_COMPLETION,
 )
 from django_elasticsearch_dsl_drf.filter_backends import (
     FilteringFilterBackend,
@@ -14,6 +14,7 @@ from django_elasticsearch_dsl_drf.filter_backends import (
     SuggesterFilterBackend,
     HighlightBackend
 )
+
 from django_elasticsearch_dsl_drf.viewsets import BaseDocumentViewSet
 from django_elasticsearch_dsl_drf.pagination import PageNumberPagination
 from djapps.posts.documents import VideoContentDocument
@@ -48,18 +49,18 @@ class VideoContentDocumentView(BaseDocumentViewSet):
                 'pre_tags': ["<b>"],
                 'post_tags': ["</b>"],
             }
-        },
-        'channel': {
-            'enabled': True,
-            'options': {
-                'pre_tags': ["<b>"],
-                'post_tags': ["</b>"],
-            }
+        }
+    }
+
+    search_nested_fields = {
+        "channel": {
+            "path": "channel",
+            "fields": ["id"]
         }
     }
 
     search_fields = {
-        "title": {"fuzziness": "AUTO"},
+        "title": {"fuzziness": "AUTO", "boost": 4},
         "channel": None
     }
 
@@ -104,9 +105,5 @@ class VideoContentDocumentView(BaseDocumentViewSet):
         "pub_date": "pub_date"
     }
 
-    def get_queryset(self):
-        return super().get_queryset()
 
-    def list(self, request, *args, **kwargs):
-        return super().list(request, *args, **kwargs)
 

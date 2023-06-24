@@ -9,10 +9,13 @@ import WatchLaterIcon from '@mui/icons-material/WatchLater';
 import Resumable from "resumablejs";
 import Kitty from "../../images/raise_kitty.webp";
 import ChannelLogo from "../../images/logo.jpg";
+import NoContent from "../../images/video-content.png";
 import { postAPI } from "../../services/post/post.service";
 import Avatar from '@mui/material/Avatar';
 import {Link} from "react-router-dom";
-
+import { MdOutlineVideoLibrary, MdOutlineSubscriptions, MdOutlineWatchLater } from "react-icons/md";
+import { GrHomeRounded } from "react-icons/gr";
+import { RxVideo } from "react-icons/rx";
 
 
 
@@ -74,7 +77,12 @@ const VideoList = props => {
                     </div>
                 </div>
             )
-        }) : null;
+        }) : <div style={{ height:"100%", width:"100%", display:"flex", justifyContent:"center", alignItems:"center" }}>
+                <div style={{ display:"flex", justifyContent:"center", alignItems:"center", flexDirection:"column" }}>
+                    <img src={NoContent} style={{ width: 200, height: 200 }} alt="no-content" />
+                    <p style={{ fontWeight:650, fontFamily:"Roboto", color:"#aeaeae", padding:0, margin:0, fontSize:20, lineHeight:"30px", textAlign:"center" }}>Upload Video Content</p>
+                </div>
+            </div>;
     }
 
 
@@ -83,12 +91,12 @@ const VideoList = props => {
             <div className="bodyTemplate">
                 <aside>
                     <ul className="sidebar">
-                        <li ref={listRef} onClick={selectMenu} className="menu active"><span><HomeIcon style={{ verticalAlign:"center", margin:0 }} /></span> Home</li>
-                        <li onClick={selectMenu} className="menu"><span><SubscriptionsIcon style={{ verticalAlign:"center", margin:0 }} /></span> Subscriptions</li>
-                        <li onClick={selectMenu} className="menu"><span><VideoLibraryIcon style={{ verticalAlign:"center", margin:0 }} /></span> Library</li>
+                        <li ref={listRef} onClick={selectMenu} className="menu active"><span><GrHomeRounded fontSize={20} style={{ verticalAlign:"center", margin:0 }} /></span> Home</li>
+                        <li onClick={selectMenu} className="menu"><span><MdOutlineSubscriptions fontSize={25} style={{ verticalAlign:"center", margin:0 }} /></span> Subscriptions</li>
+                        <li onClick={selectMenu} className="menu"><span><MdOutlineVideoLibrary fontSize={25} style={{ verticalAlign:"center", margin:0 }} /></span> Library</li>
                         <li onClick={selectMenu} className="menu"><span><HistoryIcon style={{ verticalAlign:"center", margin:0 }} /></span> History</li>
-                        <li onClick={selectMenu} className="menu"><span><WatchLaterIcon style={{ verticalAlign:"center", margin:0 }} /></span> Watch Later</li>
-                        <li onClick={selectMenu} className="menu"><span></span></li>
+                        <li onClick={selectMenu} className="menu"><span><MdOutlineWatchLater fontSize={25} style={{ verticalAlign:"center", margin:0 }} /></span> Watch Later</li>
+                        <li onClick={selectMenu} className="menu"><span><RxVideo fontSize={30} style={{ verticalAlign:"center", margin:0, fontSize: 25 }} /></span> Your videos</li>
                         <li onClick={selectMenu} className="menu"><span></span></li>
                     </ul>
                 </aside>

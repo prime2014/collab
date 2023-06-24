@@ -1,8 +1,11 @@
 from django_elasticsearch_dsl import Document, Index,fields
 from elasticsearch_dsl import analyzer
+from django_elasticsearch_dsl.registries import registry
 from djapps.posts.models import VideoContent, Channel
 from django.conf import settings
 from django.core.serializers.json import DjangoJSONEncoder
+from django_elasticsearch_dsl_drf.compat import StringField, KeywordField
+
 
 
 
@@ -16,7 +19,45 @@ html_strip = analyzer(
     filter=['lowercase', 'stop', 'snowball'],
     char_filter=['html_strip']
 )
+@INDEX.doc_type
+class ChannelDocument(Document):
 
+    id = fields.TextField(
+        attr="id"
+    )
+
+    creator = fields.TextField(
+        attr="creator_indexing"
+    )
+
+    name = fields.TextField(
+        fields = {
+            "raw": fields.TextField(analyzer="keyword"),
+            "suggest": fields.CompletionField()
+        }
+    )
+
+    description = fields.TextField(
+        analyzer=html_strip
+    )
+
+    logo = fields.FileField()
+
+    cover_photo = fields.FileField()
+
+    class Django(object):
+        model = Channel
+
+    class Index:
+        name="channel"
+        fields = (
+            "id",
+            "creator",
+            "name",
+            "description",
+            "logo",
+            "cover_photo"
+        )
 
 @INDEX.doc_type
 class VideoContentDocument(Document):
@@ -26,18 +67,24 @@ class VideoContentDocument(Document):
         attr="id"
     )
 
-    channel = fields.TextField(
-        attr="channel_indexing",
-        analyzer=html_strip,
-        fields={
-        'raw': fields.TextField(analyzer='keyword'),
+    channel = fields.NestedField(
+        properties ={
+            'id': StringField(
+                analyzer=html_strip
+            ),
+            "name": StringField(
+                analyzer=html_strip
+            ),
+            "logo": fields.FileField(),
+            "cover_photo": fields.FileField()
         }
     )
 
     title = fields.TextField(
         analyzer=html_strip,
         fields = {
-            'raw': fields.TextField(analyzer='keyword')
+            'raw': fields.TextField(analyzer='keyword'),
+            "suggest": fields.CompletionField()
         }
     )
 
@@ -52,13 +99,7 @@ class VideoContentDocument(Document):
 
     video = fields.TextField()
 
-    thumbnail = fields.TextField(
-        attr="thumbnail_indexing",
-        analyzer=html_strip,
-        fields={
-        'raw': fields.TextField(analyzer='keyword'),
-        }
-    )
+    thumbnail = fields.FileField()
 
     vid_time = fields.FloatField()
 

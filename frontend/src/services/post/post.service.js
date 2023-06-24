@@ -6,18 +6,39 @@ import { store_settings } from "../../redux/store";
 const baseURL = process.env.REACT_APP_API_URL;
 
 
-
-const getUploadToken = async () => {
+const searchVideos = async (search_text) => {
     const access_token = cookies.load("access")
     try {
-        let token = null;
-        let response = await axios.get(baseURL + "/posts/upload/", {
+        let search_result = null;
+        let response = await fetch(baseURL + `/posts/v1/search/?title__startswith=${search_text}&highlight=title`, {
+            method: "GET",
             headers: {
                 "Content-Type": "application/json",
                 "authorization": `Bearer ${access_token}`
             }
         })
-        if (response) token = response.data;
+
+        if (response.ok) search_result = response.json();
+        console.log(search_result)
+        return search_result;
+    } catch(err){
+        return err.response.data;
+    }
+}
+
+
+const getUploadToken = async () => {
+    const access_token = cookies.load("access")
+    try {
+        let token = null;
+        let response = await fetch(baseURL + "/posts/upload/", {
+            method: "GET",
+            headers: {
+                "Content-Type": "application/json",
+                "authorization": `Bearer ${access_token}`
+            }
+        })
+        if (response.ok) token = response.json();
         return token;
     } catch(error){
         return error.response.data;
@@ -30,13 +51,14 @@ const getChannelPrivate = async (url) =>{
 
     try {
         let channel = null;
-        let response = await axios.get(url, {
+        let response = await fetch(url, {
+            method: "GET",
             headers: {
                 "Content-Type": "application/json",
                 "authorization": `Bearer ${access_token}`
             }
         });
-        if(response) channel = response.data;
+        if(response) channel = response.json();
         console.log(channel)
         return channel;
     } catch(error){
@@ -71,13 +93,14 @@ const getChannelVideos = async (offset, channel, limit) => {
     const access_token = cookies.load("access")
     try {
         let videos = null;
-        let response = await axios.get(baseURL + `/posts/v1/videos/?channel=${channel}&limit=${limit}&offset=${offset}/`, {
+        let response = await fetch(baseURL + `/posts/v1/videos/?channel=${channel}&limit=${limit}&offset=${offset}/`, {
+            method: "GET",
             headers: {
                 "Content-Type": "multipart/form-data",
                 "authorization": `Bearer ${access_token}`,
             }
         })
-        if (response) videos = response.data;
+        if (response.ok) videos = response.json();
         console.log(videos)
         return videos;
     } catch(error){
@@ -93,13 +116,15 @@ const updatePost = async post => {
     let { id, ...rest } = post;
     try {
         let mypost = null;
-        let response = await axios.put(baseURL + `/posts/v1/videos/${id}/?channel=${channel_id}`, rest, {
+        let response = await fetch(baseURL + `/posts/v1/videos/${id}/?channel=${channel_id}`, {
+            method: "PUT",
             headers: {
                 "Content-Type": "application/json",
                 "authorization": `Bearer ${access_token}`
-            }
+            },
+            body: JSON.stringify(rest)
         })
-        if(response) mypost = response.data;
+        if(response) mypost = response.json();
         console.log(mypost)
         return mypost;
     } catch(error){
@@ -112,13 +137,14 @@ const getVideoFeed = async () => {
     const access_token = cookies.load("access");
     try {
         let videos = null;
-        let response = await axios.get(baseURL + `/posts/v1/videos/`, {
+        let response = await fetch(baseURL + `/posts/v1/videos/`, {
+            method: "GET",
             headers: {
                 "Content-Type": "application/json",
                 "authorization": `Bearer ${access_token}`
             }
         });
-        if (response) videos = response.data;
+        if (response) videos = response.json();
 
         return videos
     } catch(error){
@@ -133,13 +159,14 @@ const getVideoDetail = async (channel_id) =>{
 
     try {
         let video = null;
-        let response = await axios.get(baseURL + `/posts/v1/videos/${channel_id}/`, {
+        let response = await fetch(baseURL + `/posts/v1/videos/${channel_id}/`, {
+            method: "GET",
             headers: {
                 "Content-Type": "application/json",
                 "authorization": `Bearer ${access_token}`
             }
         });
-        if (response) video = response.data;
+        if (response) video = response.json();
         return video;
     } catch(error) {
         return error.response.data;
@@ -153,13 +180,14 @@ const getComments = async () => {
     try {
         let comments = null;
 
-        let response = await axios.get(baseURL + `/posts/comments/read/`, {
+        let response = await fetch(baseURL + `/posts/comments/read/`, {
+            method: "GET",
             headers: {
                 "Content-Type": "application/json",
                 "authorization": `Bearer ${access_token}`
             }
         });
-        if (response) comments = response.data;
+        if (response.ok) comments = response.json();
         return comments;
     } catch(error){
         return error.response.data;
@@ -173,13 +201,15 @@ const createComment = async my_comment => {
     try {
         let comment = null;
 
-        let response = await axios.post(baseURL + `/posts/comments/write/`, { ...my_comment }, {
+        let response = await fetch(baseURL + `/posts/comments/write/`, {
+            method: "POST",
             headers: {
                 "Content-Type": "application/json",
                 "authorization": `Bearer ${access_token}`
-            }
+            },
+            body:JSON.stringify(my_comment)
         });
-        if (response) comment = response.data;
+        if (response) comment = response.json();
         return comment;
     } catch(error){
         return error.response.data;
@@ -192,13 +222,15 @@ const updateComment = async (id, comment) => {
     try {
         let comment = null;
 
-        let response = await axios.put(baseURL + `/posts/comments/write/${id}/`, { ...comment }, {
+        let response = await fetch(baseURL + `/posts/comments/write/${id}/`, {
+            method: "PUT",
             headers: {
                 "Content-Type": "application/json",
                 "authorization": `Bearer ${access_token}`
-            }
+            },
+            body: JSON.stringify(comment)
         });
-        if (response) comment = response.data;
+        if (response) comment = response.json();
         return comment;
     } catch(error){
         return error.response.data;
@@ -211,7 +243,8 @@ const deleteComment = async id => {
     try {
         let comment = null;
 
-        let response = await axios.delete(baseURL + `/posts/comments/write/${id}/`, {
+        let response = await fetch(baseURL + `/posts/comments/write/${id}/`, {
+            method: "DELETE",
             headers: {
                 "Content-Type": "application/json",
                 "authorization": `Bearer ${access_token}`
@@ -226,6 +259,7 @@ const deleteComment = async id => {
 
 
 export const postAPI = {
+    searchVideos,
     getUploadToken,
     uploadVideo,
     getChannelPrivate,

@@ -304,12 +304,16 @@ const VideoDetail = (props) => {
 
     const handleEnterComment = event => {
 
+        console.log(event.target.value)
         var urlRegex = /(((https?:\/\/)|(www\.))[^\s]+)/g;
 
-        let modified_txt = event.target.textContent.replace(urlRegex, (url)=><a href={`${url}`} target="_blank">`${url}`</a>)
-        console.log(modified_txt)
+
+        let modified_txt = event.target.textContent.replace(urlRegex, (url)=>"" + <a href={`${url}`} target="_blank">`${url}`</a> + "")
+        // let modified_txt = event.target.textContent;
+
+
         setComment(modified_txt)
-        event.target.textContent = modified_txt;
+        event.target.textContent =`${modified_txt}`;
         if(modified_txt){
             event.target.classList.add("text");
             setCommentBtnDisabled(false);
@@ -318,7 +322,10 @@ const VideoDetail = (props) => {
             event.target.classList.remove("text")
             setCommentBtnDisabled(true);
         }
+
     }
+
+
 
     const handlePaste = event => {
         event.preventDefault();
@@ -433,6 +440,12 @@ const VideoDetail = (props) => {
         }).catch(error=> console.log(error))
     }
 
+    const handleKeyPress = (event) => {
+        event.preventDefault();
+        if (event.ctrlKey && event.key == "l") {
+            console.log("You have succeeded!")
+        }
+    }
 
 
     return (
@@ -491,6 +504,9 @@ const VideoDetail = (props) => {
                                         <div style={{ fontSize:13 }} className="current-time">0:00</div>
                                         /
                                         <div style={{ fontSize:13 }} className="total-time"></div>
+                                    </div>
+                                    <div>
+                                        <p className="company-title">Uncensored</p>
                                     </div>
                                     <Tooltip title="Subtitles/closed captions" placement="top">
                                         <button className="captions-btn">
@@ -571,7 +587,7 @@ const VideoDetail = (props) => {
                                     <Avatar src={IsAvailable(props.user) && props.user.avatar} sx={{ bgcolor: "#4CAF50", padding:0, marginRight:"5px" }}>{IsAvailable(props.user) && props.user.first_name.charAt(0)}</Avatar>
 
                                     <div className="input-artifact">
-                                        <div ref={textInputRef} onPaste={handlePaste} onInput={handleEnterComment} className="comment-input-section" contentEditable={true} aria-label="Add a comment..."></div>
+                                        <div onKeyDown={handleKeyPress} ref={textInputRef} onPaste={handlePaste} onInput={handleEnterComment} role="textbox" className="comment-input-section" contentEditable={true} aria-label="Add a comment..."></div>
                                         <div className="comment-actions">
                                             <span className="emoji-pack"><BsEmojiLaughing style={{ fontSize:20 }} /></span>
 

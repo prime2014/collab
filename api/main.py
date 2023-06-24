@@ -14,6 +14,8 @@ import base64
 from fastapi.middleware.gzip import GZipMiddleware
 import gzip
 import json
+import mmap
+import asyncio
 
 
 
@@ -48,7 +50,7 @@ app.add_middleware(
 )
 
 
-def read_video(video_path, end, start):
+async def read_video(video_path, end, start):
     try:
         if os.path.exists(video_path):
             pass
@@ -59,7 +61,8 @@ def read_video(video_path, end, start):
         raise message
     else:
         with open(video_path, mode="rb") as video:
-            yield video.read(end - start)
+            with mmap.mmap(video.fileno(), length=(end - start), access=mmap.ACCESS_READ) as m_obj:
+                yield m_obj.read(end-start)
 
 
 
@@ -76,6 +79,7 @@ async def play_video(video:str, range: str = Header(None)):
 
     end = int(end) if end else (start + CHUNK_SIZE)
     filesize = str(os.stat(video_path).st_size)
+
 
     headers = {
         'Content-Range': f'bytes {str(start)}-{str(end)}/{filesize}',

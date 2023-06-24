@@ -55,20 +55,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
 ]
 
-INSTALLED_APPS += [
-    "corsheaders",
-    "django_celery_beat",
-    "django_celery_results",
-    "rest_framework",
-    "debug_toolbar",
-    "channels",
-    "django_elasticsearch_dsl",
-    'django_elasticsearch_dsl_drf',
-    "request_token",
-    "webpush",
-    "video_encoding",
 
-]
 
 INSTALLED_APPS += [
     "djapps.accounts",
@@ -86,7 +73,6 @@ MIDDLEWARE = [
     # 'django_otp.middleware.OTPMiddleware',
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     'django.contrib.messages.middleware.MessageMiddleware',
-    'request_token.middleware.RequestTokenMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
@@ -112,7 +98,7 @@ TEMPLATES = [
     },
 ]
 
-# WSGI_APPLICATION = 'config.wsgi.application'
+WSGI_APPLICATION = 'config.wsgi.application'
 ASGI_APPLICATION = 'config.asgi.appllication'
 
 
@@ -124,7 +110,7 @@ DATABASES = {
 }
 
 DATABASES["default"]["ATOMIC_REQUESTS"] = True
-# DATABASES["default"]["CONN_MAX_AGE"] = 60
+DATABASES["default"]["CONN_MAX_AGE"] = 600
 
 
 # Password validation
@@ -233,15 +219,16 @@ DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="Exo<exo@mail.com>")
 EMAIL_HOST = "mailhog"
 EMAIL_PORT = 1025
 
-
 CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:3000",
-    "http://localhost:3000"
+    "http://localhost:3000",
+    "https://c787-102-1-84-249.ngrok-free.app"
 ]
 
 CSRF_TRUSTED_ORIGINS = [
     "http://127.0.0.1:3000",
-    "http://localhost:3000"
+    "http://localhost:3000",
+    "https://c787-102-1-84-249.ngrok-free.app"
 ]
 
 
@@ -286,17 +273,7 @@ INTERNAL_IPS = [
 hostname, _, ips = socket.gethostbyname_ex(socket.gethostname())
 INTERNAL_IPS = [ip[:-1] + '1' for ip in ips] + INTERNAL_IPS
 
-ELASTICSEARCH_DSL={
-    'default': {
-        'hosts': 'elasticsearch:9200'
-    },
-}
-
-ELASTICSEARCH_INDEX_NAMES = {
-    'djapps.posts.documents': 'video',
-}
-
-
+FILE_UPLOAD_MAX_MEMORY_SIZE = "200MB"
 
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(hours=24),

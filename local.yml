@@ -30,6 +30,7 @@ services:
       - PGBOUNCER_MAX_CLIENT_CONN=1000
       - PGBOUNCER_DEFAULT_POOL_SIZE=50
       - PGBOUNCER_DATABASE=collab_db
+      - PGBOUNCER_POOL_MODE=transaction
     volumes:
       - /path/to/init-scripts:/docker-entrypoint-initdb.d
     ports:
@@ -40,20 +41,28 @@ services:
       - db_secure
       - collab-net
 
-  # heimdall:
-  #   restart: always
-  #   build:
-  #     context: .
-  #     dockerfile: ./utils/proxy/Dockerfile
-  #   image: collab_heimdall_image
-  #   container_name: collab_local_heimdall
-  #   ports:
-  #     - "8087:8087"
-  #   depends_on:
-  #     - postgres
-  #   networks:
-  #     - collab-net
-  #     - db_secure
+  redocly:
+    restart: on-failure
+    build:
+      context: .
+      dockerfile: ./docs/Dockerfile
+    image: collab_api_image
+    container_name: collab_api_docs
+    volumes:
+      - ./docs/:/docs
+      - /docs/node_modules/
+    env_file:
+      - ./docs/.env
+    depends_on:
+      - postgres
+      - pgbouncer
+    ports:
+      - "8080:8080"
+    command: >
+      /bin/bash -c http-server -c-1 -a 0.0.0.0
+
+    networks:
+      - collab-net
 
   django: &django
     restart: on-failure
@@ -70,7 +79,7 @@ services:
     command: >
       /bin/bash -c "python manage.py makemigrations
                     python manage.py migrate
-                    uvicorn config.asgi:application --host 0.0.0.0 --port 8000"
+                    python manage.py runserver 0.0.0.0:8000"
     ports:
       - "8000:8000"
     depends_on:
@@ -78,7 +87,7 @@ services:
       - pgbouncer
     networks:
       - collab-net
-      # - db_secure
+
 
   fastapi:
     restart: on-failure

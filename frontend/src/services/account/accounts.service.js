@@ -1,18 +1,23 @@
 import axios from "axios";
 
+
 const baseURL = process.env.REACT_APP_API_URL;
 
 
 const login = async credentials => {
     try {
         let token = null;
-        let response = await axios.post(baseURL + "/token/", { ...credentials }, {
+        let response = await fetch(baseURL + "/token/", {
+            method: "POST",
             headers: {
                 "Content-Type": "application/json"
-            }
+            },
+            body: JSON.stringify(credentials)
         })
-        if (response) token = response.data;
+
+        if (response) token = response.json();
         console.log(token);
+        // console.log(token);
         return token;
     } catch(error){
         console.log(error.response.data);

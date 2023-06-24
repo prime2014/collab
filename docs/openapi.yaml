@@ -1,0 +1,263 @@
+openapi: 3.0.0
+info:
+  title: Uncensored API Documentation
+  version: 1.0.0
+  description: A RESTful API for a video sharing service
+servers:
+  - url: http://127.0.0.1:8000/api/
+
+
+paths:
+  /accounts/v1/users/:
+    get:
+      tags:
+        - "Users"
+      description: get a list of users
+      responses:
+        '201':
+          description: request was successful
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/User"
+
+    post:
+      tags:
+        - "Account Registration"
+      description: register a user account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - email
+                - password
+                - first_name
+                - last_name
+              properties:
+                email:
+                  type: string
+                  example: john.doe@mail.com
+                  pattern: \W+@\W+\.[a-z]{3}
+                password:
+                  type: string
+                  example: Klmno1234!89
+                  writeOnly: true
+                  minimum: 9
+                  pattern: '^[A-Za-z0-9_\w]{9}'
+                  format: password
+                first_name:
+                  type: string
+                  example: John
+                last_name:
+                  type: string
+                  example: Doe
+      responses:
+        '200':
+          description: Successfully signed up a user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  email:
+                    type: array
+                    items:
+                      type: string
+
+  /token/:
+    post:
+      description: user login
+      tags:
+        - "Login"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  example: example@example.com
+                password:
+                  format: password
+                  type: string
+                  example: Berty123@gh!
+                  pattern: ^[A-Za-z0-9_]{9,}$
+      responses:
+        '200':
+          description: Successful login
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access:
+                    type: string
+                    example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c
+                  refresh:
+                    type: string
+                    example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c
+        '401':
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+                    example: No active account found with the given credentials
+
+  /accounts/v1/users/{id}/:
+    get:
+      description: get a single user
+      security:
+        - bearerAuth: []
+      tags:
+        - "User"
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: user fetched successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+    put:
+      description: Update a user account
+      security:
+        - bearerAuth: []
+      tags:
+        - "User"
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  example: example@example.com
+                first_name:
+                  type: string
+                  example: John
+                last_name:
+                  type: string
+                  example: Doe
+      responses:
+        '200':
+          description: user credentials were updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: There was a problem with your request. Check your credentials
+    delete:
+      security:
+        - bearerAuth: []
+      tags:
+        - "User"
+      description: Delete a user account
+      parameters:
+        - name: id
+          required: true
+          in: path
+          description: A user id
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Successfully deleted a user
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+                    example: "No content"
+
+
+
+#basic authentication
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    User:
+      type: object
+      required:
+        - email
+        - password
+        - first_name
+        - last_name
+      properties:
+        email:
+          type: string
+          example: user1@example.com
+        first_name:
+          type: string
+          example: John
+        last_name:
+          type: string
+          example: Doe
+        avatar:
+          type: string
+          example: http://127.0.0.1:8000/media/thumbnail/profile.png
+        height:
+          type: integer
+          example: 10
+        width:
+          type: integer
+          example: 10
+        is_active:
+          type: boolean
+          example: false
+        is_staff:
+          type: boolean
+          example: false
+        is_superuser:
+          type: boolean
+          example: false
+
+
+
+
+

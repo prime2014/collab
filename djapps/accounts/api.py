@@ -5,7 +5,6 @@ from rest_framework.viewsets import ModelViewSet
 from rest_framework import permissions, status
 from rest_framework.response import Response
 from rest_framework.decorators import action
-from request_token.models import RequestToken
 from djapps.accounts.tasks import send_authentication_email
 from djapps.accounts.generate_otp import verify_otp
 from rest_framework.exceptions import ValidationError
@@ -14,6 +13,9 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from rest_framework.views import APIView
+from rest_framework_simplejwt.views import TokenObtainPairView
+from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
+
 
 
 logging.basicConfig(format="%(asctime)s %(module)s %(levelname)s %(message)s", encoding="utf-8", level=logging.INFO)
@@ -22,6 +24,23 @@ logger = logging.getLogger(__name__)
 
 
 User = get_user_model()
+
+
+class ObtainTokenPairView(TokenObtainPairView):
+
+    def post(self, request, *args, **kwargs):
+        threads = []
+
+        serializer = self.get_serializer(data=request.data)
+
+        try:
+            serializer.is_valid(raise_exception=True)
+
+        except TokenError as e:
+            raise InvalidToken(e.args[0])
+        return Response(serializer.validated_data, status=status.HTTP_200_OK)
+
+
 
 
 class CheckStatus(APIView):

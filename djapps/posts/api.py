@@ -1,4 +1,4 @@
-from rest_framework.viewsets import ModelViewSet
+from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet
 from djapps.posts.models import Channel, VideoContent, Subscribers, Comments
 from rest_framework import status
 from rest_framework.response import Response
@@ -31,9 +31,11 @@ import time
 from django.db.models import Q
 from tinytag import TinyTag
 from rest_framework.generics import ListAPIView, CreateAPIView, UpdateAPIView, DestroyAPIView
-from multiprocessing import Process, cpu_count
-
-
+from multiprocessing import Process, cpu_count, Pool
+from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
+from django.core.files.storage import Storage
+from django.core.files import File
+from djapps.posts import transcoding
 
 
 SECRET_KEY=env("SECRET_KEY")
@@ -45,6 +47,34 @@ logging.basicConfig(format="%(asctime)s %(module)s %(levelname)s %(message)s", l
 
 logger = logging.getLogger(__name__)
 
+# def generate_thumbnail(file_path, name, secret_token):
+#     while not os.path.exists(f"{file_path}"):
+#         time.sleep(4)
+
+#     os.system(f"ffmpeg -i {file_path} -ss 00:00:05 -frames:v 1 ./media/thumbnails/{name}_{secret_token}.jpg")
+#     return "./media/thumbnails/{name}_{secret_token}.jpg"
+
+# def transcode_video_720(file_path, name, secret_token):
+#     while not os.path.exists(f"{file_path}"):
+#         time.sleep(4)
+
+#     os.system(f"ffmpeg -i {file_path} -r 25 -crf 30 -vf scale=-iw*a:720 -c:v libvpx-vp9 -b:v 3M -preset faster ./media/videos/720/{name}_{secret_token}_720.webm")
+#     return;
+
+
+# def transcode_video_480(file_path, name, secret_token):
+#     while not os.path.exists(f"{file_path}"):
+#         time.sleep(4)
+#     os.system(f"ffmpeg -i {file_path} -vf scale=iw*a:480 -c:v libvpx-vp9 -b:v 2M  ./media/videos/480/{name}_{secret_token}_480.webm")
+#     return;
+
+
+def transcode_video_360(file_path, name, secret_token):
+    while not os.path.exists(f"{file_path}"):
+        time.sleep(4)
+
+    os.system(f"ffmpeg -i {file_path} -vf scale=iw*a:360 -c:v libvpx-vp9 -b:v 1M  ./media/videos/360/{name}_{secret_token}_360.webm")
+    return;
 
 
 class GetUploadToken(APIView):
@@ -89,7 +119,7 @@ class FileUploaderAPIView(APIView):
 
     @validate_jwt_token
     def post(self, request, *args, **kwargs):
-          
+
         file_name: str = request.FILES["file"].name
 
 
@@ -102,16 +132,23 @@ class FileUploaderAPIView(APIView):
 
             name, ext = file_name.split(".")
             secret_token = str(int(time.time()))
-            os.system(f"ffmpeg -i {file_path} -ss 00:00:05 -preset veryfast -crf 22 -frames:v 1 ./media/thumbnails/{name}_{secret_token}.jpg")
+
+            with ProcessPoolExecutor(max_workers=2) as executor:
+                executor.submit(transcoding.transcode_video_720, file_path, name, secret_token)
+                executor.submit(transcoding.generate_thumbnail, file_path, name, secret_token)
+
+
             duration = TinyTag.get(file_path).duration
+
             url = self.request.build_absolute_uri(f"/media/videos/default/{file_name}/")
+            thumbnail_url = f"/thumbnails/{name}_{secret_token}.jpg"
             video = VideoContent.objects.create(
                 title = "",
                 description="",
                 channel=self.request.user.channels.first(),
                 video=url,
                 vid_time= duration,
-                thumbnail = f"/thumbnails/{name}_{secret_token}.jpg"
+                thumbnail = thumbnail_url
             )
 
             serializers = VideoContentSerializer(instance=video, context={"request": request})

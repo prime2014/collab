@@ -5,7 +5,7 @@ from django.utils import timezone
 from django.conf import settings
 from django.core.validators import MinValueValidator
 import uuid
-import redis
+from django_elasticsearch_dsl_drf.wrappers import dict_to_obj
 
 
 class Channel(models.Model):
@@ -43,6 +43,10 @@ class Channel(models.Model):
 
     def __str__(self):
         return self.name
+
+    @property
+    def creator_indexing(self):
+        return self.creator.first_name + " " + self.creator.last_name
 
 
 
@@ -140,8 +144,12 @@ class VideoContent(models.Model):
 
     @property
     def channel_indexing(self):
-        if self.channel is not None:
-            return self.channel.name
+        wrapper = dict_to_obj({
+            "id": self.channel.id,
+            "name": self.channel.name,
+        })
+
+        return wrapper
 
     @property
     def thumbnail_indexing(self):
@@ -166,7 +174,7 @@ class Comments(models.Model):
     flagged = models.BooleanField(
         default=False
     )
-    
+
     pub_date = models.DateTimeField(
         default=timezone.now,
         editable=False
