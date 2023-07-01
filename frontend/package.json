@@ -19,7 +19,7 @@
     "croppie": "^2.6.5",
     "fabric": "^5.2.4",
     "ffprobe": "^1.1.2",
-    "framer-motion": "^7.6.6",
+    "framer-motion": "^10.12.18",
     "graphql": "^16.6.0",
     "jwt-decode": "^3.1.2",
     "photoeditorsdk": "^5.17.3",
