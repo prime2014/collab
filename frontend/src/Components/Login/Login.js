@@ -6,7 +6,6 @@ import TwitterIcon from '@mui/icons-material/Twitter';
 import { accountAPI } from "../../services/account/accounts.service";
 import toast, { Toaster } from "react-hot-toast";
 import { userReducer } from "../../redux/reducers/reducers";
-import * as actionTypes from "../../redux/actionTypes";
 import cookies from "react-cookies";
 
 
@@ -29,6 +28,10 @@ const Login = props => {
             event.target.parentElement.lastChild.classList.remove("persistPosition")
         }
     }
+
+	const showResponse = () => {
+
+	}
 
 	const setCookie = (token) => {
 		const expires = new Date()
@@ -111,6 +114,9 @@ const Login = props => {
 						</div>
 					</div>
 
+					{/* <div>
+						<Captcha siteKey="6Len9mEnAAAAAP1X0fGtBTP8hNQPlDAbWDoACsKy" onResponse={showResponse}></Captcha>
+					</div> */}
 
 					<div className="container-login100-form-btn">
 						<button className="login100-form-btn">

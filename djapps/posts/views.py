@@ -3,7 +3,11 @@ from django_elasticsearch_dsl_drf.constants import (
     LOOKUP_QUERY_CONTAINS,
     LOOKUP_QUERY_STARTSWITH,
     LOOKUP_FILTER_EXISTS,
-    SUGGESTER_COMPLETION,
+    FUNCTIONAL_SUGGESTER_COMPLETION_PREFIX,
+    FUNCTIONAL_SUGGESTER_COMPLETION_MATCH,
+    LOOKUP_FILTER_PREFIX,
+    STRING_LOOKUP_FILTERS,
+    SUGGESTER_COMPLETION
 )
 from django_elasticsearch_dsl_drf.filter_backends import (
     FilteringFilterBackend,
@@ -12,7 +16,8 @@ from django_elasticsearch_dsl_drf.filter_backends import (
     DefaultOrderingFilterBackend,
     CompoundSearchFilterBackend,
     SuggesterFilterBackend,
-    HighlightBackend
+    HighlightBackend,
+    MultiMatchSearchFilterBackend
 )
 
 from django_elasticsearch_dsl_drf.viewsets import BaseDocumentViewSet
@@ -26,7 +31,6 @@ class VideoContentDocumentView(BaseDocumentViewSet):
     document = VideoContentDocument
     pagination_class = PageNumberPagination
     serializer_class = VideoDocumentSerializer
-    lookup_field = "id"
     filter_backends = [
         FilteringFilterBackend,
         IdsFilterBackend,
@@ -34,7 +38,8 @@ class VideoContentDocumentView(BaseDocumentViewSet):
         DefaultOrderingFilterBackend,
         CompoundSearchFilterBackend,
         SuggesterFilterBackend,
-        HighlightBackend
+        HighlightBackend,
+        MultiMatchSearchFilterBackend
     ]
 
     multi_search_fields = (
@@ -44,18 +49,18 @@ class VideoContentDocumentView(BaseDocumentViewSet):
 
     highlight_fields = {
         "title": {
-            'enabled': True,
             'options': {
                 'pre_tags': ["<b>"],
                 'post_tags': ["</b>"],
-            }
+            },
+            'enabled': True
         }
     }
 
     search_nested_fields = {
         "channel": {
             "path": "channel",
-            "fields": ["id"]
+            "fields": ["name"]
         }
     }
 
@@ -64,31 +69,14 @@ class VideoContentDocumentView(BaseDocumentViewSet):
         "channel": None
     }
 
-    suggester_fields = {
-        'title_suggest': {
-            'field': 'title.suggest',
-            'suggesters': [
-                SUGGESTER_COMPLETION
-            ],
-            'options': {
-                'size': 10,
-                'skip_duplicates': True
-            }
-        },
-        'channel_suggest' : {
-            'field': 'channel.suggest',
-            'suggesters': [
-                SUGGESTER_COMPLETION
-            ]
-        }
-    }
 
     # Define filter fields
     filter_fields = {
         "title": {
             "lookups": [
                 LOOKUP_QUERY_CONTAINS,
-                LOOKUP_QUERY_STARTSWITH
+                LOOKUP_QUERY_STARTSWITH,
+                LOOKUP_FILTER_PREFIX
             ]
         },
         "channel": {
@@ -103,6 +91,25 @@ class VideoContentDocumentView(BaseDocumentViewSet):
     ordering_fields = {
         "title": "title.raw",
         "pub_date": "pub_date"
+    }
+
+    suggester_fields = {
+        'title_suggest': {
+            'field': 'title.suggest',
+            'suggesters': [
+                FUNCTIONAL_SUGGESTER_COMPLETION_PREFIX
+            ],
+            'options': {
+                'size': 10,
+                'skip_duplicates': True
+            }
+        },
+        'channel_suggest' : {
+            'field': 'channel.suggest',
+            'suggesters': [
+                FUNCTIONAL_SUGGESTER_COMPLETION_MATCH
+            ]
+        }
     }
 
 

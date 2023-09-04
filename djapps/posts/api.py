@@ -1,5 +1,5 @@
-from rest_framework.viewsets import ModelViewSet, ReadOnlyModelViewSet
 from djapps.posts.models import Channel, VideoContent, Subscribers, Comments
+from rest_framework.viewsets import ModelViewSet
 from rest_framework import status
 from rest_framework.response import Response
 from djapps.posts.serializers import ChannelSerializer, SubscriberSerializer, CommentSerializer
@@ -24,18 +24,27 @@ from rest_framework.permissions import IsAuthenticated
 import os
 from django.http import StreamingHttpResponse
 from django.core.cache import cache
+from django.core.files.storage import Storage, FileSystemStorage
+from django.core.files import File
 from djapps.posts.serializers import VideoContentSerializer
 from djapps.posts.pagination import VideoPagination
-from moviepy.editor import *
 import time
 from django.db.models import Q
 from tinytag import TinyTag
 from rest_framework.generics import ListAPIView, CreateAPIView, UpdateAPIView, DestroyAPIView
-from multiprocessing import Process, cpu_count, Pool
-from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
-from django.core.files.storage import Storage
 from django.core.files import File
-from djapps.posts import transcoding
+import random
+import string
+from djapps.posts.tasks import transcode_720_res, generate_thumbnail
+from django.core.exceptions import BadRequest
+from rest_framework.decorators import action
+from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
+from PIL import Image
+from django.core.files.storage import FileSystemStorage
+from django.db.models import F
+import asyncio
+
+
 
 
 SECRET_KEY=env("SECRET_KEY")
@@ -71,6 +80,7 @@ logger = logging.getLogger(__name__)
 
 def transcode_video_360(file_path, name, secret_token):
     while not os.path.exists(f"{file_path}"):
+        #sleep at least 4 sec
         time.sleep(4)
 
     os.system(f"ffmpeg -i {file_path} -vf scale=iw*a:360 -c:v libvpx-vp9 -b:v 1M  ./media/videos/360/{name}_{secret_token}_360.webm")
@@ -82,6 +92,7 @@ class GetUploadToken(APIView):
     permission_classes = (IsAuthenticated,)
     serializer_class = VideoSerializer
     parser_classes = (MultiPartParser, FormParser)
+    throttle_scope = "upload_token"
 
     def get(self, request, *args, **kwargs):
         '''These api method is used to generate an upload token for an authenticated user'''
@@ -103,7 +114,7 @@ class FileUploaderAPIView(APIView):
     parser_classes = (MultiPartParser, FormParser)
     MEDIA_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "media")
     VIDEO_DIR = os.path.join(MEDIA_DIR, "videos")
-
+    throttle_scope = "uploads"
 
     def get(self, request, *args, **kwargs):
         '''These api method is used to generate an upload token for an authenticated user'''
@@ -119,39 +130,41 @@ class FileUploaderAPIView(APIView):
 
     @validate_jwt_token
     def post(self, request, *args, **kwargs):
-
         file_name: str = request.FILES["file"].name
-
-
+        #check for the file
         if request.FILES['file']:
-            file_path = str("./" + "media" + "/" + "videos" + "/" + "default" + "/" + f"{file_name}")
+            file  = File(request.FILES["file"], name=file_name)
+            file_storage = FileSystemStorage(location="/collab/media/videos/default/")
+            name = file_storage.save(file_name, content=file)
+            file_path = file_storage.path(name)
+            logger.info("TEMPORARY UPLOAD PATH:%s", request.FILES["file"].temporary_file_path())
 
-            with open(file_path, "ab") as fp:
-                for chunk in request.FILES['file'].chunks():
-                    fp.write(chunk)
+            file_path = file_path.replace("/collab", "")
+            #TODO: distinguish between InMemoryUploader and TemporaryFileUploader
+            duration = TinyTag.get(request.FILES['file'].temporary_file_path()).duration
+            transcode_task = transcode_720_res.delay(name) #
+            result = generate_thumbnail.delay(name)
+            # logger.info("THE TRANSCODED TASK ID IS: %s" % transcode_task.request.id)
+            logger.info("THIS IS THE RESULT:%s" % result.get())
 
-            name, ext = file_name.split(".")
-            secret_token = str(int(time.time()))
-
-            with ProcessPoolExecutor(max_workers=2) as executor:
-                executor.submit(transcoding.transcode_video_720, file_path, name, secret_token)
-                executor.submit(transcoding.generate_thumbnail, file_path, name, secret_token)
+            video_url = self.request.build_absolute_uri(file_path)
+            # the saving of the thumbnail url
 
 
-            duration = TinyTag.get(file_path).duration
-
-            url = self.request.build_absolute_uri(f"/media/videos/default/{file_name}/")
-            thumbnail_url = f"/thumbnails/{name}_{secret_token}.jpg"
             video = VideoContent.objects.create(
                 title = "",
                 description="",
                 channel=self.request.user.channels.first(),
-                video=url,
+                video=video_url,
                 vid_time= duration,
-                thumbnail = thumbnail_url
+                thumbnail = result.get().replace("/media", "")
             )
+            video.save()
 
             serializers = VideoContentSerializer(instance=video, context={"request": request})
+            # logger.info("This is file path: %s" % file_path)
+
+            logger.info("THIS IS FILE URL: %s" % result.get())
             return Response(serializers.data, status=status.HTTP_201_CREATED)
 
 
@@ -203,9 +216,11 @@ class ChannelViewset(ModelViewSet):
     @staticmethod
     @receiver(post_save, sender=User)
     def create_channel(sender, instance, created, **kwargs):
+        random.seed(instance.id) # for reproducability and tracking
+        res = ''.join(random.choices((string.ascii_letters + string.digits), k=8))
         if created == True:
-            name = str(instance.first_name + instance.last_name).lower()
-            Channel.objects.create(creator=instance, name=f"@{name}")
+            name = str(instance.first_name).lower()
+            Channel.objects.create(creator=instance, name=f"{name}{res}")
 
 
 
@@ -233,15 +248,19 @@ class VideoViewset(ModelViewSet):
     serializer_class = VideoContentSerializer
     authentication_classes = (JWTAuthentication, SessionAuthentication)
     permission_classes = (IsAuthenticatedOrReadOnly, )
+    parser_classes=[MultiPartParser, FormParser, JSONParser]
     pagination_class = VideoPagination
 
     def get_queryset(self):
+        # get a list
         if self.request.query_params.get("channel"):
             channel = self.request.query_params.get("channel")
-            return VideoContent.objects.filter(Q(channel_id=channel)).select_related("channel")
+            videos = VideoContent.objects.filter(Q(channel__id=channel)).select_related("channel")
+            return videos
         return self.queryset
 
     def list(self, request, *args, **kwargs):
+        #TODO: Update pgbouncer so that database fetches fresh data
         queryset = self.filter_queryset(self.get_queryset())
 
         page = self.paginate_queryset(queryset)
@@ -252,23 +271,54 @@ class VideoViewset(ModelViewSet):
         serializer = self.serializer_class(queryset, many=True, context={"request": request})
         return Response(serializer.data)
 
-    def create(self, request, *args, **kwargs):
-        serializer = self.serializer_class(data=request.data, context={"request": request})
+    async def create(self, request, *args, **kwargs):
+        serializer = await self.serializer_class(data=request.data, context={"request": request})
 
         if serializer.is_valid(raise_exception=True):
-            serializer.save()
+            await serializer.save()
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def update(self, request, *args, **kwargs):
-        serializer = self.serializer_class(instance=self.get_object(), data=request.data, partial=True)
+
+        if "pic" in request.data:
+
+            base_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+            path = os.path.join(base_dir, "media", request.data.get("pic"))
+            if os.path.exists(path):
+                video = self.get_object()
+                old_file_url = video.thumbnail.url
+                video.thumbnail = request.data.get("pic")
+                video.save(update_fields=['thumbnail'])
+                os.remove("/collab" + old_file_url)
+                request.data.pop("pic")
+            else:
+                return Response({"detail": "The path to the thumbnail does not exist or the link is broken"}, status=status.HTTP_400_BAD_REQUEST)
+
+        serializer = self.serializer_class(instance=self.get_object(), data=request.data, partial=True, context={"request": request})
 
         if serializer.is_valid(raise_exception=True):
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
         else:
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(methods=["POST"], detail=True, authentication_classes=[JWTAuthentication, SessionAuthentication], permission_classes=[IsAuthenticated])
+    async def thumbnail(self, request, *args, **kwargs):
+        '''Instance for uploading a video thumbnail'''
+        storage = FileSystemStorage(location="/collab/media/thumbnails")
+
+
+        file = File(request.FILES['avatar'], name=request.FILES['avatar'].name)
+        file_name = storage.save(request.FILES['avatar'].name, content=file)
+        file_path = storage.path(file_name)
+        file_path = file_path.replace("/collab", "")
+        thumbnail_url = self.request.build_absolute_uri(file_path)
+        logger.info("THIS IS FILE PATH:%s" % thumbnail_url)
+        logger.info("This is the imge file: %s" % request.FILES['avatar'])
+        return Response({"url": thumbnail_url}, status=status.HTTP_200_OK)
 
 
 
@@ -302,6 +352,8 @@ class CommentViewSet(CreateAPIView, UpdateAPIView, DestroyAPIView):
 
 
     def update(self, request, *args, **kwargs):
+
+
         serializer = self.serializer_class(instance=self.get_object(), data=request.data, partial=True)
 
         if serializer.is_valid(raise_exception=True):

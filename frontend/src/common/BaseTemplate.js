@@ -20,6 +20,8 @@ import { RxVideo } from "react-icons/rx";
 
 const BaseTemplate = props => {
     const listRef = useRef(null);
+    const sidebarRef = useRef(null);
+
 
     const selectMenu = (event) => {
         const list_elements = document.getElementsByClassName("menu")
@@ -32,7 +34,8 @@ const BaseTemplate = props => {
     return (
         <Navbar>
             <div className="bodyTemplate">
-                <ul className="sidebar">
+                <ul ref={sidebarRef} className="sidebar">
+                    <li className="sidebar-spacer"></li>
                     <li ref={listRef} onClick={selectMenu} className="menu active"><span><GrHomeRounded fontSize={20} style={{ verticalAlign:"center", margin:0 }} /></span> Home</li>
                     <li onClick={selectMenu} className="menu"><span><MdOutlineSubscriptions fontSize={25} style={{ verticalAlign:"center", margin:0 }} /></span> Subscriptions</li>
                     <li onClick={selectMenu} className="menu"><span><MdOutlineVideoLibrary fontSize={25} style={{ verticalAlign:"center", margin:0 }} /></span> Library</li>

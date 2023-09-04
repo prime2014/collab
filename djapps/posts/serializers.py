@@ -1,10 +1,6 @@
-from rest_framework.serializers import ModelSerializer
+from rest_framework.serializers import ModelSerializer, HyperlinkedModelSerializer
 from djapps.posts.models import Channel, VideoContent, Subscribers
 from rest_framework import serializers
-import mimetypes
-from djapps.posts.media_type import file_types
-from rest_framework.exceptions import ValidationError
-from hashid_field.rest import HashidSerializerCharField
 from django.core.serializers.json import DjangoJSONEncoder
 from hashid_field import Hashid
 from djapps.posts.models import Comments
@@ -109,6 +105,23 @@ class CommentSerializer(ModelSerializer):
             "flagged",
             "pub_date"
         )
+
+    def create(self, validated_data):
+        return self.Meta.model.objects.create(**validated_data)
+
+
+class SubscribersSerializer(ModelSerializer):
+    user = serializers.ReadOnlyField(
+        source="user.id"
+    )
+    class Meta:
+        model = Subscribers
+        fields = (
+            "user",
+            "channel",
+            "date_of_subscription"
+        )
+
 
     def create(self, validated_data):
         return self.Meta.model.objects.create(**validated_data)

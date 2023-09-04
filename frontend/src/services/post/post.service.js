@@ -10,7 +10,7 @@ const searchVideos = async (search_text) => {
     const access_token = cookies.load("access")
     try {
         let search_result = null;
-        let response = await fetch(baseURL + `/posts/v1/search/?title__startswith=${search_text}&highlight=title`, {
+        let response = await fetch(baseURL + `/posts/v1/search/?title__contains=${search_text}`, {
             method: "GET",
             headers: {
                 "Content-Type": "application/json",
@@ -39,6 +39,7 @@ const getUploadToken = async () => {
             }
         })
         if (response.ok) token = response.json();
+        console.log(token)
         return token;
     } catch(error){
         return error.response.data;
@@ -71,12 +72,15 @@ const uploadVideo = async (token, file) => {
     const access_token = cookies.load("access")
     try {
         let post = null;
-        let response = await axios.post(baseURL + "/api/posts/v1/videos/",  file, {
+        let response = await fetch(baseURL + "/api/posts/v1/videos/", {
+            method: "POST",
             headers: {
                 "Content-Type": "multipart/form-data",
                 "authorization": `Bearer ${access_token}`,
                 "token": `${token}`
             },
+            body: file,
+
             onUploadProgress: (progressEvent)=>{
 
             }

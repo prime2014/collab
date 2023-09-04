@@ -4,6 +4,7 @@ import { persistStore, persistReducer } from "redux-persist";
 import {
     userReducer,
     channelReducer,
+    videoReducer
 } from "./reducers/reducers";
 import thunk from "redux-thunk";
 import storage from "redux-persist/lib/storage";
@@ -31,6 +32,7 @@ const persistConfig = {
 let rootReducer = combineReducers({
     userReducer,
     channelReducer,
+    videoReducer
 })
 
 let persistedReducer = persistReducer(persistConfig, rootReducer)

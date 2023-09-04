@@ -3,7 +3,7 @@ import os
 from django.apps import apps
 
 
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings.base")
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings.local")
 
 app = Celery("djapps")
 

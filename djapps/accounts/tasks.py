@@ -1,5 +1,4 @@
 from config.celery_app import app as celery_app
-from django_celery_beat.models import CrontabSchedule
 from django.core.mail import send_mail
 from django.template.loader import render_to_string
 from djapps.accounts.generate_otp import generate_otp

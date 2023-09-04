@@ -29,7 +29,8 @@ import VisibilityOutlinedIcon from '@mui/icons-material/VisibilityOutlined';
 import { convertDate } from "../utils/convertDate"
 import { Link } from "react-router-dom";
 import UploadVideo from './UploadVideo';
-import { TfiFile, TfiEye } from "react-icons/tfi"
+import { TfiFile, TfiEye } from "react-icons/tfi";
+import { getChannelVideos } from '../redux/actionDispatch';
 
 
 function createData(id, description, video, thumbnail, title, visibility, restrictions, pub_date, views, comments, likes) {
@@ -265,7 +266,7 @@ function TableComponent(props) {
   const [page, setPage] = React.useState(0);
   const [dense, setDense] = React.useState(false);
   const [rowsPerPage, setRowsPerPage] = React.useState(5);
-  const [videoContent, setVideoContent] = React.useState({})
+  // const [videoContent, setVideoContent] = React.useState({})
 
   const handleRequestSort = (event, property) => {
     const isAsc = orderBy === property && order === 'asc';
@@ -273,19 +274,21 @@ function TableComponent(props) {
     setOrderBy(property);
   };
 
-  React.useEffect(()=>{
-
-    postAPI.getChannelVideos(0, props.channel.id, rowsPerPage).then(resp=>{
-      setVideoContent(resp);
-    }).catch(error=>{
-      console.log(error)
-    })
+  React.useLayoutEffect(()=>{
+    props.getChannelVideos(0, props.channel.id, rowsPerPage)
+    console.log(props.videoContent)
+    // postAPI.getChannelVideos(0, props.channel.id, rowsPerPage).then(resp=>{
+    //   console.log(resp)
+    //   // setVideoContent(resp);
+    // }).catch(error=>{
+    //   console.log(error)
+    // })
   },[])
 
 
 
   const handleSelectAllClick = (event) => {
-    let rows = videoContent.results.map(item=>
+    let rows = props.videoContent.results.map(item=>
       createData(
         item.id,
         item.description,
@@ -376,10 +379,10 @@ function TableComponent(props) {
               orderBy={orderBy}
               onSelectAllClick={handleSelectAllClick}
               onRequestSort={handleRequestSort}
-              rowCount={Object.keys(videoContent).length && videoContent.results.length}
+              rowCount={Object.keys(props.videoContent).length && props.videoContent.results.length}
             />
             <TableBody>
-              {Object.keys(videoContent).length && stableSort(videoContent.results, getComparator(order, orderBy))
+              {Object.keys(props.videoContent).length && stableSort(props.videoContent.results, getComparator(order, orderBy))
                 .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                 .map((row, index) => {
                   const isItemSelected = isSelected(row.id);
@@ -447,7 +450,7 @@ function TableComponent(props) {
         <TablePagination
           rowsPerPageOptions={[5, 10, 25]}
           component="div"
-          count={Object.keys(videoContent).length && videoContent.results.length}
+          count={Object.keys(props.videoContent).length && props.videoContent.results.length}
           rowsPerPage={rowsPerPage}
           page={page}
           onPageChange={handleChangePage}
@@ -463,8 +466,13 @@ function TableComponent(props) {
 const mapStateToProps = state => {
   return {
     user: state.userReducer.credentials,
-    channel: state.channelReducer.channel
+    channel: state.channelReducer.channel,
+    videoContent: state.videoReducer
   }
 }
 
-export default connect(mapStateToProps, null)(TableComponent);
+const mapDispatchToProps = {
+  getChannelVideos
+}
+
+export default connect(mapStateToProps, mapDispatchToProps)(TableComponent);

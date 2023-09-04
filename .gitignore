@@ -8,4 +8,4 @@ pytest.cache
 rod
 media
 /api/my_r10_skills.webm
-
+logs/

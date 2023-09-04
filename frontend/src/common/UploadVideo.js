@@ -24,6 +24,15 @@ import cookie from "react-cookies";
 import { postAPI } from '../services/post/post.service';
 import axios from "axios";
 import LoadingButton from '@mui/lab/LoadingButton';
+import ContentLoader from "react-content-loader";
+import { ProgressSpinner } from 'primereact/progressspinner';
+import { LoadingOutlined, PlusOutlined } from '@ant-design/icons';
+import { message, Upload, Modal } from 'antd';
+import { Tooltip } from "primereact/tooltip";
+import { connect } from 'react-redux';
+import { createPost } from '../redux/actionDispatch';
+
+
 
 
 
@@ -101,36 +110,30 @@ const UploadVideo = (props) => {
     title: "",
     description: ""
   })
+  const [imageUrl, setImageUrl] = React.useState("");
   const [uploadloader, setUploadLoader] = React.useState(false)
   const [video, setVideo] = React.useState("")
-  const r = new Resumable({
-      target: ""
-  })
+
   const videoRef = React.useRef(null);
   const thumbRef = React.useRef(null);
   const thumbRef2 = React.useRef(null);
+  const [selectedThumbnail, setSelectedThumbnail] = React.useState(2)
   const [progress, setProgress] = React.useState(0)
   const [token, setToken] = React.useState("")
   const [mypost, setMyPost] = React.useState({})
-  const [firstActive, setFirstActive] = React.useState(1)
   const [disabled, setDisabled] = React.useState(false)
+  const [loading, setLoading] = React.useState(false)
+  const [previewImage, setPreviewImage] = React.useState("")
+  const [previewOpen, setPreviewOpen] = React.useState(false)
+  const overlayRef = React.useRef();
+  const [messageApi, contextHolder] = message.useMessage()
 
-  React.useEffect(()=>{
+
+  React.useLayoutEffect(()=>{
     if(Object.keys(props.editPost).length){
       setMyPost(props.editPost)
     }
-    axios.get(process.env.REACT_APP_API_URL + "/posts/token/", {
-      headers: {
-        "Content-Type": "application/json",
-        "authorization": `Bearer ${cookie.load('access')}`
-      }
-    }).then(resp=>{
-      let { data } = resp;
-      console.log(data.token)
-      setToken(data.token);
-    }).catch(error=>{
-      return error.response.data;
-    })
+
   },[])
 
 
@@ -144,6 +147,25 @@ const UploadVideo = (props) => {
   //   uploadMethod: "POST",
   //   simultaneousUploads: 1
   // })
+
+
+  const getVideoToken = (file) => {
+    axios.get(process.env.REACT_APP_API_URL + "/posts/token/", {
+      headers: {
+        "Content-Type": "application/json",
+        "authorization": `Bearer ${cookie.load('access')}`
+      }
+    }).then(resp=>{
+      let { data } = resp;
+      console.log(data.token)
+      setToken(data.token);
+      setVideo(file)
+      setFileError(false)
+      uploadVideoFile(file, data.token)
+    }).catch(error=>{
+      return error.response.data;
+    })
+  }
 
 
   const handleClickOpen = () => {
@@ -164,15 +186,7 @@ const checkFileType = (file) => {
   let mimetypes = ["video/x-flv", "video/mp4", "application/x-mpegURL", "video/MP2T", "video/3gpp", "video/quicktime", "video/x-msvideo,video/x-ms-wmv"]
 
   if(mimetypes.includes(file.type)){
-    postAPI.getUploadToken().then(resp=>{
-      setToken(resp.token);
-      setVideo(file)
-      setFileError(false)
-      uploadVideoFile(file)
-    }).catch(error=>{
-      console.log(error)
-    })
-
+      getVideoToken(file)
   } else {
     console.log("Invalid file type");
     setFileError(true)
@@ -303,7 +317,7 @@ const paintVideo = React.useCallback(()=>{
 //     })
 // }
 
-  const uploadVideoFile = async file => {
+  const uploadVideoFile = async (file, token) => {
     const firstDiv = document.getElementsByClassName("troller")[0];
     const secondDiv = document.getElementsByClassName("slayer")[0];
     let formData = new FormData()
@@ -316,7 +330,7 @@ const paintVideo = React.useCallback(()=>{
     try {
         let response = await axios.post(url, formData, {
             headers: {
-                "Content-Type": "multipart/formdata",
+                "Content-Type": "multipart/form-data",
                 "Authorization": `Bearer ${cookie.load("access")}`,
                 "X-CSRFToken": `${cookie.load("csrftoken")}`
             },
@@ -325,8 +339,9 @@ const paintVideo = React.useCallback(()=>{
               setProgress(percentCompleted)
             }
         });
+        props.activate()
         if (response) post = response.data;
-        console.log(post)
+        setMyPost(post)
         return post;
     } catch(error){
        return error.response.data;
@@ -339,27 +354,125 @@ const paintVideo = React.useCallback(()=>{
       titleRef.current.parentElement.classList.add("errorHighlight");
       return;
     } else if(Object.keys(mypost).length){
+
       let { id, title, description } = mypost;
 
+      let image = selectedThumbnail === 1 ? matchURLString(imageUrl) : null;
+
+
       setDisabled(true)
-      postAPI.updatePost({ id, title, description }).then(resp=>{
+      let data = selectedThumbnail === 1 ? {id, title, description, pic:image} : {id, title, description }
+
+      // logic for creating the post
+      props.createPost(data).then(resp=>{
+        setDisabled(false);
+        setMyPost({})
+        messageApi.open({
+          type:"success",
+          content:"Post was successfully created"
+        })
+        handleClose()
+      }).catch(err=>{
         setDisabled(false)
-        console.log(resp);
-      }).catch(error=>{
-        setDisabled(false)
-        console.log(error)
+        messageApi.open({
+          type: "error",
+          content: "There was a problem creating your post. Try again later"
+        })
       })
+
     } else {
         let { id, title, description } = post;
     }
   }
 
 
+  const getBase64 = (img, callback) => {
+    const reader = new FileReader();
+    reader.addEventListener('load', () => callback(reader.result));
+    reader.readAsDataURL(img);
+  };
+
+
+  const handleChange = (info) => {
+
+    if (info.file.status === 'uploading') {
+      setLoading(true);
+      return;
+    }
+    if (info.file.status === 'done') {
+
+      getBase64(info.file.originFileObj, (url) => {
+        // console.log("URL OF FILE:", url)
+
+        setLoading(false);
+        setImageUrl(info.file.response.url);
+
+        let matched = matchURLString(info.file.response.url)
+        if(matched) {
+          console.log(matched)
+
+        }
+        setSelectedThumbnail(1);
+      });
+    }
+  };
+
+
+  const beforeUpload = (file) => {
+    console.log(file)
+    const isJpgOrPng = file.type === 'image/jpeg' || file.type === 'image/png' || file.type == "image/webp";
+    if (!isJpgOrPng) {
+      message.error('You can only upload JPG/PNG/WEBP file!');
+    }
+
+    return isJpgOrPng;
+  };
+
+
+  const uploadButton = (
+    <div className="trigger-upload">
+      {loading ? <LoadingOutlined /> : <PlusOutlined />}
+      <div>
+        Upload
+      </div>
+    </div>
+  );
+
+  const handlePreview = (event) => {
+    console.log("I have been clicked")
+    event.stopPropagation();
+    setPreviewOpen(true)
+    setPreviewImage(imageUrl)
+  }
+
+  const handleCancel = () => {
+    setPreviewOpen(false)
+    setPreviewImage("")
+  }
+
+
+  // Thumbnail selector when user does not explicitly upload a video thumbnail
+  const selectThumbnail = event => setSelectedThumbnail(parseInt(event.target.dataset.thumbnail));
+
+  // natch url string and modify it
+  const matchURLString = (url) => {
+    const re = new RegExp(/http:\/\/\d{3}\.\d{1}\.\d{1}\.\d{1}:\d{4}\/media\//)
+
+    let result = url.match(re)
+    if (result[0]) {
+      let matched = url.replace(result[0], "")
+      return matched;
+    } else {
+      return
+    }
+  }
+
 
 
 
   return (
     <div>
+      {contextHolder}
       <BootstrapDialog
         onClose={handleClose}
         aria-labelledby="customized-dialog-title"
@@ -385,7 +498,7 @@ const paintVideo = React.useCallback(()=>{
               <div style={{ display:"flex", flexDirection:"column", justifyContent:"center", alignItems:"center", marginTop:"30px"}}>
                 <p style={{ fontSize:"14px", fontWeight:700, padding:0, margin:0, lineHeight:"30px" }}>Drag and Drop video files to upload</p>
                 <p style={{ fontSize:"13px", color:"#999", padding:0, margin:0, lineHeight:"20px" }}>Your videos will be private until you publish them</p>
-                <p style={{ textAlign:"center", lineHeight:"30px",  fontSize:"13px", fontWeight:"bold", color:"darkslateblue", fontFamily:"Roboto" }}>{progress > 0 ? `Progress: ${parseFloat(progress).toFixed(1)}%` : null}</p>
+                <p style={{ textAlign:"center", lineHeight:"30px",  fontSize:"13px", fontWeight:"bold", color:"darkslateblue", fontFamily:"Roboto" }}>{progress > 0 ? `Uploading: ${parseFloat(progress).toFixed(1)}%` : null}</p>
                 <Button variant="contained" style={{ margin:"10px 0" }} ref={uploadTrigger} onClick={handleFileUpload}>SELECT FILES</Button>
                 <form style={{ width:"1px", height:"1px" }} ref={inputFormRef} onSubmit={(event)=> event.preventDefault()}>
                   <input style={{ width:"1px", height:"1px" }} onChange={handleFile} ref={fileRef} type="file" name="video" accept='video/x-flv, video/mp4, application/x-mpegURL, video/MP2T, video/3gpp, video/quicktime, video/x-msvideo,video/x-ms-wmv' />
@@ -415,18 +528,66 @@ const paintVideo = React.useCallback(()=>{
                 <p style={{ fontSize:"13px" }}>Select or upload a picture that shows what's in your video.
                   A good thumbnail stands out and draws viewers' attention. Learn more</p>
                 <div className='thumbnailWrapper'>
-                  <div className="thumbnailTemplates"></div>
-                  <div ref={thumbRef} style={Object.keys(mypost).length ? {  background: `url(${mypost.thumbnail})`, objectFit:"cover", backgroundSize:"cover", border: "3px solid darkslateblue", padding:"10px 0" } : null} className="thumbnails"></div>
-                  <div ref={thumbRef2} style={Object.keys(mypost).length ? {  background: `url(${mypost.thumbnail})`, objectFit:"cover", backgroundSize:"cover" } : null} className="thumbnails"></div>
+                  <div className="uploader-wrapper">
+                  <Upload
+                    name="avatar"
+                    listType="picture-card"
+                    className="avatar-uploader"
+                    action={`http://127.0.0.1:8000/api/posts/v1/videos/${mypost.id}/thumbnail/`}
+                    showUploadList={false}
+                    beforeUpload={beforeUpload}
+                    onChange={handleChange}
+                    method="post"
+                    headers={{
+                      "Authorization": `Bearer ${cookie.load("access")}`,
+                      "X-CSRFToken": `${cookie.load("csrftoken")}`
+                    }}
+                  >
+                    {imageUrl ? (
+                        <div>
+                        <img
+                          src={imageUrl}
+                          alt="avatar"
+                          style={{
+                            display:'block',
+                            width: '100%',
+                            objectFit:"cover",
+                            height:"120px"
+                          }}
+                        />
+                        </div>
+                      ) : (
+                        uploadButton
+                    )}
+                  </Upload>
+                  <div ref={overlayRef} className={imageUrl.length ? 'overlayImg displayOverlay' : 'overlayImg'}>
+                      <span style={{ zIndex:200, display:"inline-block", cursor:"pointer" }} className="pi pi-trash" title="Delete Thumbnail"></span>
+                  </div>
+                  </div>
+
+                  <div data-thumbnail={2} data-url={mypost.thumbnail} onClick={selectThumbnail} ref={thumbRef} style={Object.keys(mypost).length ? {  background: `url(${mypost.thumbnail})`, objectFit:"cover", backgroundSize:"cover", border: "3px solid darkslateblue", padding:"10px 0" } : null} className={selectedThumbnail !== 2 ? "thumbnails" : "thumbnails checker"}></div>
+                  <div data-thumbnail={3} data-url={mypost.thumbnail} onClick={selectThumbnail} ref={thumbRef2} style={Object.keys(mypost).length ? {  background: `url(${mypost.thumbnail})`, objectFit:"cover", backgroundSize:"cover" } : null} className={selectedThumbnail !== 3 ? "thumbnails" : "thumbnails checker"}></div>
                 </div>
               </div>
             </div>
-            <div style={{ marginTop:"10px", position:"sticky", top:"20px" }}>
-              <div>
-                <video poster={Object.keys(mypost).length && mypost.thumbnail} controls preload='none' src={Object.keys(mypost).length && mypost.video} controlsList='nodownload' width={300} height = {200} ref={videoRef}></video>
-              </div>
-
-            </div>
+            {Object.keys(mypost).length ?
+              (<div style={{ marginTop:"10px", position:"sticky", top:"20px" }}>
+                <div>
+                  <video poster={Object.keys(mypost).length && mypost.thumbnail} controls preload='none' src={Object.keys(mypost).length && mypost.video} controlsList='nodownload' width={300} height = {200} ref={videoRef}></video>
+                </div>
+              </div>) :
+              <ContentLoader
+                speed={8}
+                width={300}
+                height={240}
+                viewBox="0 0 300 240"
+                backgroundColor="#e5e0e0"
+                foregroundColor="#ecebeb"
+                {...props}
+              >
+                <rect x="0" y="0" rx="5" ry="5" width="100%" height="220" />
+              </ContentLoader>
+            }
 
           </div>}
           </div>
@@ -438,10 +599,14 @@ const paintVideo = React.useCallback(()=>{
           <span style={{ fontSize:"12px", textAlign:"center", width:"70%", margin:"0 auto", lineHeight:"20px" }}>By submitting your videos to Uncensored, you acknowledge that you agree to Uncensored's <Link to="#">Terms of Service</Link> and <Link to="#">Community Guidelines.</Link>
                 Please make sure that you do not violate others' copyright or privacy rights. <Link to="#">Learn more</Link></span>
         </DialogActions> :
-        <DialogActions>
-          <div style={{ display:"flex", flexDirection:"row-reverse", margin:"10px 0" }}>
-            {/* <Button disabled={disabled} loading={disabled} onClick={publishVideo} variant="contained" startIcon={<PublishIcon />}>Publish Video</Button> */}
+        <DialogActions style={{margin:0, padding:"0 10px"}}>
+          <div style={{ display:"flex", flexDirection:"row-reverse", justifyContent:"space-between", width:"100%", margin:"10px 0" }}>
+
             <LoadingButton onClick={publishVideo} loading={disabled} loadingPosition="start" startIcon={<PublishIcon />} variant="contained">Publish Video</LoadingButton>
+            <div className='status-reporter'>
+              <div className="lds-ripple"><div></div><div></div></div>
+              <span style={{fontSize:"12px", fontFamily:"Roboto"}}>Generating video thumbnail...</span>
+            </div>
           </div>
         </DialogActions>}
       </BootstrapDialog>
@@ -450,4 +615,9 @@ const paintVideo = React.useCallback(()=>{
 }
 
 
-export default UploadVideo;
+const mapDispatchToprops = {
+  createPost
+}
+
+
+export default connect(null, mapDispatchToprops)(UploadVideo);

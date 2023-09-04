@@ -22,3 +22,18 @@ export const setSingleVideo = payload => {
         payload
     }
 }
+
+
+export const setChannelVideos = payload => {
+    return {
+        type: actionTypes.SET_CHANNEL_VIDEO_LIST,
+        payload
+    }
+}
+
+export const addVideoToChannel = payload => {
+    return {
+        type: actionTypes.ADD_VIDEO_TO_CHANNEL,
+        payload
+    }
+}

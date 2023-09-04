@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Uncensored Offline</title>
+    <style>
+        body {
+            height: 90vh;
+        }
+        .navigation {
+            display:flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 5px 20px;
+            line-height: 50px;
+        }
+
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            z-index: 500;
+            background-color: #fff;
+            height: 60px;
+        }
+
+        .sidebar-spacer {
+            visibility: hidden;
+            height: 60px;
+            width: 100%;
+        }
+
+        .sidebar {
+            margin: 0;
+            margin-right: 10px;
+            background-color: #fff;
+            padding: 0;
+            width: 240px;
+            position: fixed;
+            padding: 0 20px;
+            top: 0;
+            left: 0;
+            height: 100vh;
+            z-index: 200;
+            overflow: hidden;
+        }
+
+        .bodyTemplate {
+            position: relative;
+            width: 100%;
+            height: inherit;
+        }
+
+        .sidebar li {
+            width: 220px;
+            list-style-type: none;
+            padding: 0 5px;
+            background-color: #fff;
+            line-height: 45px;
+            display: flex;
+            justify-content: flex-start;
+            align-items: center;
+            font-family: Roboto, sans-serif;
+            font-size: 14px;
+            font-weight: light;
+            cursor: pointer;
+        }
+
+        .sidebar li > span {
+            display: inline-flex;
+            justify-content: flex-start;
+            align-items: center;
+            width: 50px;
+        }
+
+        .search {
+            line-height: 40px;
+            width: 38vw;
+            border-radius: 50px 0 0 50px;
+            border: 1px solid #d4d4d4;
+            padding-left: 10px;
+            outline: none;
+            font-size: 16px;
+            font-weight: 600;
+            font-family: Roboto;
+            box-shadow: inset 0px 1px #ddd;
+        }
+
+        .search-input {
+            display: inline-block;
+            vertical-align: middle;
+            position: relative;
+        }
+
+
+        .dropdownCreate {
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding-right: 10px;
+        }
+
+        .onlineTemplate {
+            margin-top: 60px;
+            margin-left: 240px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: Roboto, sans-serif;
+            height: inherit;
+        }
+
+        .offline {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+
+        .offline button {
+            line-height: 30px;
+            border-radius: 5px;
+            border: none;
+            cursor: pointer;
+            box-shadow: 1px 1px 5px 1px #7a7a7a;
+            background-color: darkslateblue;
+            color: #fff;
+            font-family: Roboto, sans-serif;
+            width: 100px;
+        }
+
+        .rightIcons {
+            display: inline-flex;
+            justify-content: center;
+            align-items: center;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            margin-right: 10px;
+            cursor: pointer;
+            padding-right: 10px;
+        }
+
+        .css-1d3jhju-MuiAvatar-root {
+            position: relative;
+            display: -webkit-box;
+            display: -webkit-flex;
+            display: -ms-flexbox;
+            display: flex;
+            -webkit-align-items: center;
+            -webkit-box-align: center;
+            -ms-flex-align: center;
+            align-items: center;
+            -webkit-box-pack: center;
+            -ms-flex-pack: center;
+            -webkit-justify-content: center;
+            justify-content: center;
+            -webkit-flex-shrink: 0;
+            -ms-flex-negative: 0;
+            flex-shrink: 0;
+            width: 40px;
+            height: 40px;
+            font-family: "Roboto","Helvetica","Arial",sans-serif;
+            font-size: 1.25rem;
+            line-height: 1;
+            border-radius: 50%;
+            overflow: hidden;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+            color: #fff;
+            background-color: #bdbdbd;
+            background-color: #ff5722;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+    <nav class="navigation">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <svg class="MuiSvgIcon-root MuiSvgIcon-fontSizeMedium css-i4bv87-MuiSvgIcon-root" focusable="false" aria-hidden="true" viewBox="0 0 24 24" data-testid="MenuIcon" style="font-size: 25px; width:25px; height:25px;"><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"></path></svg>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-left: 10px;">
+                <svg class="MuiSvgIcon-root MuiSvgIcon-fontSizeMedium css-i4bv87-MuiSvgIcon-root" focusable="false" aria-hidden="true" fill="red" viewBox="0 0 24 24" data-testid="LiveTvTwoToneIcon" style="font-size: 20px; color: red; height:30px; width:30px;"><path d="M3 20h18V8H3v12zm6-10 7 4-7 4v-8z" opacity=".3"></path><path d="M9 10v8l7-4zm12-4h-7.58l3.29-3.29L16 2l-4 4h-.03l-4-4-.69.71L10.56 6H3c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 14H3V8h18v12z"></path></svg>
+                <span style="font-size: 24px; font-family: Poppins; font-weight: bold; margin-left: 5px;">
+                    Uncensored
+                </span>
+            </div>
+        </div>
+
+        <form style="display: flex; align-items: center;"><div class="search-input"><input autocomplete="off" type="search" class="search" name="videos" placeholder="Search" spellcheck="true"></div><button style="border-radius: 0px 50px 50px 0px; border: none; height: 42px; width: 60px; background-color: rgb(244, 244, 244); display: flex; justify-content: center; align-items: center;"><svg stroke="currentColor" fill="currentColor" stroke-width="0" version="1.1" viewBox="0 0 17 17" font-size="20" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg"><g></g><path d="M16.604 15.868l-5.173-5.173c0.975-1.137 1.569-2.611 1.569-4.223 0-3.584-2.916-6.5-6.5-6.5-1.736 0-3.369 0.676-4.598 1.903-1.227 1.228-1.903 2.861-1.902 4.597 0 3.584 2.916 6.5 6.5 6.5 1.612 0 3.087-0.594 4.224-1.569l5.173 5.173 0.707-0.708zM6.5 11.972c-3.032 0-5.5-2.467-5.5-5.5-0.001-1.47 0.571-2.851 1.61-3.889 1.038-1.039 2.42-1.611 3.89-1.611 3.032 0 5.5 2.467 5.5 5.5 0 3.032-2.468 5.5-5.5 5.5z"></path></svg></button></form>
+        <div style="display: flex; justify-content: right; align-items: center;">
+            <span class="dropdownCreate"><svg height="24" viewBox="0 0 24 24" focusable="false" style="pointer-events: none; display: block; width: 1.5em; height: 1.5em;"><path d="M14 13h-3v3H9v-3H6v-2h3V8h2v3h3v2zm3-7H3v12h14v-6.39l4 1.83V8.56l-4 1.83V6m1-1v3.83L22 7v8l-4-1.83V19H2V5h16z"></path></svg></span>
+            <span class="rightIcons"><svg enable-background="new 0 0 24 24" height="24" viewBox="0 0 24 24" width="24" focusable="false" style="pointer-events: none; display: block; width: 1.5em; height: 1.5em;"><path d="M10 20h4c0 1.1-.9 2-2 2s-2-.9-2-2zm10-2.65V19H4v-1.65l2-1.88v-5.15C6 7.4 7.56 5.1 10 4.34v-.38c0-1.42 1.49-2.5 2.99-1.76.65.32 1.01 1.03 1.01 1.76v.39c2.44.75 4 3.06 4 5.98v5.15l2 1.87zm-1 .42-2-1.88v-5.47c0-2.47-1.19-4.36-3.13-5.1-1.26-.53-2.64-.5-3.84.03C8.15 6.11 7 7.99 7 10.42v5.47l-2 1.88V18h14v-.23z"></path></svg></span>
+            <div class="MuiAvatar-root MuiAvatar-circular MuiAvatar-colorDefault css-1d3jhju-MuiAvatar-root"><svg class="MuiSvgIcon-root MuiSvgIcon-fontSizeMedium MuiAvatar-fallback css-10mi8st-MuiSvgIcon-root-MuiAvatar-fallback" focusable="false" style="color:white; width:30px; height:30px;" fill="white" aria-hidden="true" viewBox="0 0 24 24" data-testid="PersonIcon"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"></path></svg></div>
+        </div>
+    </nav>
+    </div>
+    <div class="bodyTemplate">
+        <ul class="sidebar">
+            <li class="sidebar-spacer"></li>
+            <li>
+                <span><svg stroke="currentColor" fill="none" stroke-width="0" viewBox="0 0 24 24" font-size="20" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg" style="margin: 0px;"><path stroke="#000" stroke-width="1" d="M1 22V9.76a2 2 0 01.851-1.636l9.575-6.72a1 1 0 011.149 0l9.574 6.72A2 2 0 0123 9.76V22a1 1 0 01-1 1h-5.333a1 1 0 01-1-1v-5.674a1 1 0 00-1-1H9.333a1 1 0 00-1 1V22a1 1 0 01-1 1H2a1 1 0 01-1-1z"></path></svg></span>
+                Home
+            </li>
+            <li>
+                <span><svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 24 24" font-size="25" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg" style="margin: 0px;"><path fill="none" d="M0 0h24v24H0V0z"></path><path stroke-width="0" d="M4 6h16v2H4zm2-4h12v2H6zm14 8H4c-1.1 0-2 .9-2 2v8c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2v-8c0-1.1-.9-2-2-2zm0 10H4v-8h16v8zm-10-7.27v6.53L16 16z"></path></svg></span>
+                Subscriptions
+            </li>
+            <li>
+                <span><svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 24 24" font-size="25" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg" style="margin: 0px;"><path fill="none" d="M0 0h24v24H0V0z"></path><path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H8V4h12v12zM12 5.5v9l6-4.5z"></path></svg></span>
+                Library
+            </li>
+            <li>
+                <span><svg class="MuiSvgIcon-root MuiSvgIcon-fontSizeMedium css-i4bv87-MuiSvgIcon-root" focusable="false" aria-hidden="true" viewBox="0 0 24 24" data-testid="HistoryIcon" style="margin: 0px; height:1em; width:1em; font-size:25px;"><path d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"></path></svg></span>
+                History
+            </li>
+            <li>
+                <span><svg stroke="currentColor" fill="currentColor" stroke-width="0" viewBox="0 0 24 24" font-size="25" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg" style="margin: 0px;"><path fill="none" d="M0 0h24v24H0z"></path><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm.5-13H11v6l5.2 3.2.8-1.3-4.5-2.7V7z"></path></svg></span>
+                Watch Later
+            </li>
+            <li>
+                <span><svg stroke="currentColor" fill="none" stroke-width="0" viewBox="0 0 15 15" font-size="30" height="1em" width="1em" xmlns="http://www.w3.org/2000/svg" style="margin: 0px; font-size: 25px;"><path fill-rule="evenodd" clip-rule="evenodd" d="M4.76447 3.12199C5.63151 3.04859 6.56082 3 7.5 3C8.43918 3 9.36849 3.04859 10.2355 3.12199C11.2796 3.21037 11.9553 3.27008 12.472 3.39203C12.9425 3.50304 13.2048 3.64976 13.4306 3.88086C13.4553 3.90618 13.4902 3.94414 13.5133 3.97092C13.7126 4.20149 13.8435 4.4887 13.918 5.03283C13.9978 5.6156 14 6.37644 14 7.52493C14 8.66026 13.9978 9.41019 13.9181 9.98538C13.8439 10.5206 13.7137 10.8061 13.5125 11.0387C13.4896 11.0651 13.4541 11.1038 13.4296 11.1287C13.2009 11.3625 12.9406 11.5076 12.4818 11.6164C11.9752 11.7365 11.3143 11.7942 10.2878 11.8797C9.41948 11.9521 8.47566 12 7.5 12C6.52434 12 5.58052 11.9521 4.7122 11.8797C3.68572 11.7942 3.02477 11.7365 2.51816 11.6164C2.05936 11.5076 1.7991 11.3625 1.57037 11.1287C1.54593 11.1038 1.51035 11.0651 1.48748 11.0387C1.28628 10.8061 1.15612 10.5206 1.08193 9.98538C1.00221 9.41019 1 8.66026 1 7.52493C1 6.37644 1.00216 5.6156 1.082 5.03283C1.15654 4.4887 1.28744 4.20149 1.48666 3.97092C1.5098 3.94414 1.54468 3.90618 1.56942 3.88086C1.7952 3.64976 2.05752 3.50304 2.52796 3.39203C3.04473 3.27008 3.7204 3.21037 4.76447 3.12199ZM0 7.52493C0 5.28296 0 4.16198 0.729985 3.31713C0.766457 3.27491 0.815139 3.22194 0.854123 3.18204C1.63439 2.38339 2.64963 2.29744 4.68012 2.12555C5.56923 2.05028 6.52724 2 7.5 2C8.47276 2 9.43077 2.05028 10.3199 2.12555C12.3504 2.29744 13.3656 2.38339 14.1459 3.18204C14.1849 3.22194 14.2335 3.27491 14.27 3.31713C15 4.16198 15 5.28296 15 7.52493C15 9.74012 15 10.8477 14.2688 11.6929C14.2326 11.7348 14.1832 11.7885 14.1444 11.8281C13.3629 12.6269 12.3655 12.71 10.3709 12.8763C9.47971 12.9505 8.50782 13 7.5 13C6.49218 13 5.52028 12.9505 4.62915 12.8763C2.63446 12.71 1.63712 12.6269 0.855558 11.8281C0.816844 11.7885 0.767442 11.7348 0.731221 11.6929C0 10.8477 0 9.74012 0 7.52493ZM5.25 5.38264C5.25 5.20225 5.43522 5.08124 5.60041 5.15369L10.428 7.27105C10.6274 7.35853 10.6274 7.64147 10.428 7.72895L5.60041 9.84631C5.43522 9.91876 5.25 9.79775 5.25 9.61736V5.38264Z" fill="currentColor"></path></svg></span>
+                Your videos
+            </li>
+        </ul>
+
+        <div class="onlineTemplate">
+            <div class="offline">
+                <img src="./connected.svg" alt="connection" style="width:200px; height:200px; object-fit:cover;" />
+                <p>You are currently offline.</p>
+                <button>Refresh</button>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

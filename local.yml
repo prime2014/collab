@@ -2,7 +2,7 @@ version: "3"
 
 volumes:
   collab_db: {}
-  tempo: {}
+  storage: {}
 
 services:
   postgres:
@@ -13,8 +13,10 @@ services:
       - ./.env
     volumes:
       - collab_db:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
     networks:
-      - db_secure
+      - collab-net
 
   pgbouncer:
     restart: on-failure
@@ -30,7 +32,8 @@ services:
       - PGBOUNCER_MAX_CLIENT_CONN=1000
       - PGBOUNCER_DEFAULT_POOL_SIZE=50
       - PGBOUNCER_DATABASE=collab_db
-      - PGBOUNCER_POOL_MODE=transaction
+      - PGBOUNCER_POOL_MODE=session
+      - PGBOUNCER_MIN_POOL_SIZE=10
     volumes:
       - /path/to/init-scripts:/docker-entrypoint-initdb.d
     ports:
@@ -38,31 +41,30 @@ services:
     depends_on:
       - postgres
     networks:
-      - db_secure
       - collab-net
 
-  redocly:
-    restart: on-failure
-    build:
-      context: .
-      dockerfile: ./docs/Dockerfile
-    image: collab_api_image
-    container_name: collab_api_docs
-    volumes:
-      - ./docs/:/docs
-      - /docs/node_modules/
-    env_file:
-      - ./docs/.env
-    depends_on:
-      - postgres
-      - pgbouncer
-    ports:
-      - "8080:8080"
-    command: >
-      /bin/bash -c http-server -c-1 -a 0.0.0.0
+  # redocly:
+  #   restart: on-failure
+  #   build:
+  #     context: .
+  #     dockerfile: ./docs/Dockerfile
+  #   image: collab_api_image
+  #   container_name: collab_api_docs
+  #   volumes:
+  #     - ./docs/:/docs
+  #     - /docs/node_modules/
+  #   env_file:
+  #     - ./docs/.env
+  #   depends_on:
+  #     - postgres
+  #     - pgbouncer
+  #   ports:
+  #     - "8080:8080"
+  #   command: >
+  #     /bin/bash -c http-server -c-1 -a 0.0.0.0
 
-    networks:
-      - collab-net
+  #   networks:
+  #     - collab-net
 
   django: &django
     restart: on-failure
@@ -73,13 +75,13 @@ services:
     container_name: collab_local_django
     volumes:
       - .:/collab
-      - tempo:/tmp
+      - storage:/collab/media/
     env_file:
       - ./.env
     command: >
       /bin/bash -c "python manage.py makemigrations
                     python manage.py migrate
-                    python manage.py runserver 0.0.0.0:8000"
+                    hypercorn config.asgi:application --bind 0.0.0.0:8000 --keep-alive 5 --reload"
     ports:
       - "8000:8000"
     depends_on:
@@ -107,6 +109,66 @@ services:
     networks:
       - collab-net
 
+  elasticsearch:
+    container_name: collab_local_elasticsearch
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.11.0
+    environment:
+      - xpack.security.enabled=false
+      - "discovery.type=single-node"
+    networks:
+      - collab-net
+    ports:
+      - 9200:9200
+
+  redis:
+    image: "redislabs/redismod"
+    container_name: collab_local_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - ./rod:/data
+    entrypoint: >
+      redis-server
+        --loadmodule /usr/lib/redis/modules/redisearch.so MINPREFIX 3
+        --loadmodule /usr/lib/redis/modules/redisgraph.so
+        --loadmodule /usr/lib/redis/modules/rejson.so
+        --loadmodule /usr/lib/redis/modules/redisgears.so Plugin /var/opt/redislabs/modules/rg/plugin/gears_python.so
+        --save 3600 1
+    deploy:
+      replicas: 1
+      restart_policy:
+        condition: on-failure
+    networks:
+      - collab-net
+
+  mailhog:
+    image: mailhog/mailhog
+    container_name: collab_local_mailhog
+    ports:
+      - "1025:1025"  # SMTP Server
+      - "8025:8025"  # Browsable view of mailhog UI
+    restart: unless-stopped
+    networks:
+      - collab-net
+
+  worker1:
+    <<: *django
+    image: celery-collab-image
+    restart: always
+    container_name: collab_local_celery1
+    ports: []
+    command: >
+      /bin/bash -c "celery -A config.celery_app worker -l DEBUG -Q email,celery,videos,images
+                    celery -A config.celery_app beat -l INFO"
+    depends_on:
+      - postgres
+      - redis
+      - pgbouncer
+    volumes:
+      - storage:/collab/media/
+    networks:
+      - collab-net
+
   react:
     restart: on-failure
     environment:
@@ -130,33 +192,24 @@ services:
     networks:
       - collab-net
 
-  elasticsearch:
-    container_name: collab_local_elasticsearch
-    image: docker.elastic.co/elasticsearch/elasticsearch:7.11.0
-    environment:
-      - xpack.security.enabled=false
-      - "discovery.type=single-node"
-    networks:
-      - collab-net
-    ports:
-      - 9200:9200
 
-  kibana:
-    restart: on-failure
-    build:
-      context: .
-      dockerfile: ./utils/kibana/Dockerfile
-    container_name: collab_local_kibana
-    image: collab_kibana_image
-    environment:
-      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
-      - ENTERPRISESEARCH_HOSTS=http://elasticsearch:9200
-    networks:
-      - collab-net
-    depends_on:
-      - elasticsearch
-    ports:
-      - 5601:5601
+
+  # kibana:
+  #   restart: on-failure
+  #   build:
+  #     context: .
+  #     dockerfile: ./utils/kibana/Dockerfile
+  #   container_name: collab_local_kibana
+  #   image: collab_kibana_image
+  #   environment:
+  #     - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+  #     - ENTERPRISESEARCH_HOSTS=http://elasticsearch:9200
+  #   networks:
+  #     - collab-net
+  #   depends_on:
+  #     - elasticsearch
+  #   ports:
+  #     - 5601:5601
 
   # redisInsight:
   #   image: redislabs/redisinsight:latest
@@ -168,57 +221,32 @@ services:
   #   networks:
   #     - collab-net
 
-  redis:
-    image: "redislabs/redismod"
-    container_name: collab_local_redis
-    ports:
-      - "6379:6379"
-    volumes:
-      - ./rod:/data
-    entrypoint: >
-      redis-server
-        --loadmodule /usr/lib/redis/modules/redisearch.so MINPREFIX 3
-        --loadmodule /usr/lib/redis/modules/redisgraph.so
-        --loadmodule /usr/lib/redis/modules/redistimeseries.so
-        --loadmodule /usr/lib/redis/modules/rejson.so
-        --loadmodule /usr/lib/redis/modules/redisbloom.so
-        --loadmodule /usr/lib/redis/modules/redisgears.so Plugin /var/opt/redislabs/modules/rg/plugin/gears_python.so
-        --save 3600 1
-    deploy:
-      replicas: 1
-      restart_policy:
-        condition: on-failure
-    networks:
-      - collab-net
 
-  celery:
-    <<: *django
-    image: celery-collab-image
-    restart: always
-    container_name: collab_local_celery
-    ports: []
-    command: >
-      /bin/bash -c "celery -A config.celery_app worker -l DEBUG -Q celery,videos,email
-                    celery -A config.celery_app beat -l INFO"
-    depends_on:
-      - postgres
-      - redis
-      - pgbouncer
-    volumes:
-      - tempo:/tmp
-    networks:
-      - collab-net
-      - db_secure
 
-  mailhog:
-    image: mailhog/mailhog
-    container_name: collab_local_mailhog
-    ports:
-      - "1025:1025"  # SMTP Server
-      - "8025:8025"  # Browsable view of mailhog UI
-    restart: unless-stopped
-    networks:
-      - collab-net
+  # worker2:
+  #   <<: *django
+  #   image: celery-collab-image
+  #   restart: always
+  #   container_name: collab_local_celery2
+  #   ports: []
+  #   command: >
+  #     /bin/bash -c "celery -A config.celery_app worker -l DEBUG --pool=gevent --concurrency=10000 -Q email -n worker2@%h
+  #                   celery -A config.celery_app beat -l INFO"
+  #   depends_on:
+  #     - postgres
+  #     - redis
+  #     - pgbouncer
+  #   volumes:
+  #     - storage:/collab/media/
+  #   deploy:
+  #     resources:
+  #       limits:
+  #         memory: 500M
+  #   networks:
+  #     - collab-net
+      # - db_secure
+
+
 
   # imageProxy:
   #   image: darthsim/imgproxy
@@ -232,5 +260,5 @@ services:
 networks:
   collab-net:
     driver: bridge
-  db_secure:
-    driver: bridge
+
+#celery -A config.celery_app worker -l DEBUG -Q celery,videos,images -n worker1@%h

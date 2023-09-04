@@ -46,6 +46,8 @@ RUN python -m pip install --upgrade pip  \
     && useradd -ms /bin/bash 1000 \
     && pip install -r requirements.txt
 
+RUN apt install netcat-traditional
+
 COPY --chown=1000:1000 . /collab/
 
 ENTRYPOINT [ "./entrypoint.sh" ]

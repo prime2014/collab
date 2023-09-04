@@ -1,0 +1,10 @@
+services:
+  - docker
+before_install:
+  - pip install -r requirements.txt
+  - docker-compose -f testing.yml build
+script:
+  - docker-compose -f testing.yml run --rm django pytest
+
+
+

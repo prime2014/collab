@@ -41,7 +41,7 @@ SECRET_KEY = 'django-insecure-f1+e^ab%)028a98c5)b6y4tp#32glae2)eafauz5_rr$=*-1qy
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["*"]
 
 
 # Application definition
@@ -52,7 +52,7 @@ INSTALLED_APPS = [
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
-    'django.contrib.staticfiles',
+    'django.contrib.staticfiles'
 ]
 
 
@@ -110,7 +110,7 @@ DATABASES = {
 }
 
 DATABASES["default"]["ATOMIC_REQUESTS"] = True
-DATABASES["default"]["CONN_MAX_AGE"] = 600
+
 
 
 # Password validation
@@ -204,13 +204,14 @@ CELERY_RESULT_BACKEND = CELERY_BROKER_URL
 CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TASK_SERIALIZER = "json"
 CELERY_RESULT_SERIALIZER = "json"
-CELERY_TASK_TIME_LIMIT = 5 * 60
-CELERY_TASK_SOFT_TIME_LIMIT = 60
+CELERY_TASK_TIME_LIMIT = 30 * 60
+CELERY_TASK_SOFT_TIME_LIMIT = 20 * 60
 CELERY_BEAT_SCHEDULER = "django_celery_beat.schedulers:DatabaseScheduler"
 CELERY_RESULTS_BACKEND = "django-db"
 CELERY_IMPORTS = ["djapps"]
 CELERY_TASK_ROUTES = {
-    "djapps.posts.tasks.send_transcoded_videos": {"queue": "videos"},
+    "djapps.posts.tasks.transcode_720_res": {"queue": "videos"},
+    "djapps.posts.tasks.generate_thumbnail": {"queue": "images"},
     "djapps.accounts.tasks.send_authentication_email": {"queue": "email"}
 }
 
@@ -222,13 +223,13 @@ EMAIL_PORT = 1025
 CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:3000",
     "http://localhost:3000",
-    "https://c787-102-1-84-249.ngrok-free.app"
+    "https://5a24-154-159-252-142.ngrok-free.app"
 ]
 
 CSRF_TRUSTED_ORIGINS = [
     "http://127.0.0.1:3000",
     "http://localhost:3000",
-    "https://c787-102-1-84-249.ngrok-free.app"
+    "https://5a24-154-159-252-142.ngrok-free.app"
 ]
 
 
@@ -237,7 +238,7 @@ LOGGING = {
     'disable_existing_loggers': False,
     'formatters': {
         'verbose': {
-            'format': '{levelname} {module} {process:d} {thread:d} {message}',
+            'format': '{asctime} {levelname} {module} {process:d} {thread:d} {message}',
             'style': '{'
         },
         'simple': {
@@ -251,6 +252,12 @@ LOGGING = {
         },
     },
     'handlers': {
+        'file': {
+            'level': 'DEBUG',
+            'class': 'logging.FileHandler',
+            'filename': 'logs/log_report.log',
+            'formatter': 'verbose'
+        },
         'console': {
             'level': 'INFO',
             'class': 'logging.StreamHandler',
@@ -259,7 +266,7 @@ LOGGING = {
         }
     },
     'root': {
-        'handlers': ['console'],
+        'handlers': ['console', 'file'],
         'level': 'DEBUG'
     }
 }
@@ -316,3 +323,13 @@ WEBPUSH_SETTINGS = {
     "VAPID_ADMIN_EMAIL": env("VAPID_ADMIN_EMAIL")
 }
 
+FILE_UPLOAD_MAX_MEMORY_SIZE = 2621440
+
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [("redis", 6379)]
+        }
+    }
+}

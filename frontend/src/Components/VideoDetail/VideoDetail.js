@@ -1,29 +1,24 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import Navbar from "../../common/Navbar";
-import { MdPlayArrow, MdPictureInPictureAlt, MdFullscreen, MdOutlineFullscreenExit } from "react-icons/md";
+import { MdPictureInPictureAlt, MdFullscreen, MdOutlineFullscreenExit } from "react-icons/md";
 import { ImCog } from "react-icons/im";
-import { AiOutlinePause } from "react-icons/ai";
-import { IoVolumeMuteSharp, IoVolumeHighSharp } from "react-icons/io5";
 import { IoMdVolumeHigh, IoMdVolumeOff, IoMdPause, IoMdPlay, IoMdVolumeLow } from "react-icons/io";
 import { MdSubtitles } from "react-icons/md";
-import ClosedCaptionIcon from '@mui/icons-material/ClosedCaption';
 import { useParams } from "react-router-dom";
 import { getSingleVideo } from "../../redux/actionDispatch";
 import { connect } from "react-redux";
 import { IsAvailable } from "../../utils/convertDate";
 import Avatar from '@mui/material/Avatar';
-import { TfiBell, TfiDownload } from "react-icons/tfi";
+import { TfiDownload } from "react-icons/tfi";
 import { IoEllipsisHorizontal } from "react-icons/io5";
 import Button from '@mui/material/Button';
 import ButtonGroup from '@mui/material/ButtonGroup';
 import ShareIcon from '@mui/icons-material/Share';
 import IconButton from '@mui/material/IconButton';
-import { BsEmojiLaughing } from "react-icons/bs";
-import axios from "axios";
-import Video from "../../images/video.mp4";
+import { BsEmojiLaughing, BsFillPlayBtnFill } from "react-icons/bs";
 import Tooltip from '@mui/material/Tooltip';
 import { postAPI } from "../../services/post/post.service";
-import { Link } from "react-router-dom";
+import { customizeLikes } from "../../utils/convertDate";
 
 let wasPaused = false;
 let isScrubbing = false;
@@ -32,6 +27,7 @@ let isScrubbing = false;
 const VideoDetail = (props) => {
     const [volume, setVolume] = useState(1)
     // const [isScrubbing, setIsScrubbing] = useState(false)
+    const [videoError, setError] = useState(null);
     const [commentBtnDisabled, setCommentBtnDisabled] = useState(true)
     const [comment, setComment] = useState("");
     const [video, setVideo] = useState({})
@@ -65,16 +61,19 @@ const VideoDetail = (props) => {
 
         return () => {
             console.log("REMOVING...")
+            let video = videoRef.current;
+            video.pause()
             removeSourceBuffer();
         }
 
     },[])
 
 
-    const removeSourceBuffer = async () => {
-        if(mediaSource.sourceBuffers.length) {
+    const removeSourceBuffer = () => {
+        if (mediaSource.sourceBuffers.length){
             mediaSource.removeSourceBuffer(mediaSource.sourceBuffers[0])
         }
+
     }
 
 
@@ -176,6 +175,7 @@ const VideoDetail = (props) => {
 
 
         mediaSource.duration = 345;
+
         let vidBlob = await fetchMediaChunk()
 
         if(!vidBlob.byteLength){
@@ -186,21 +186,31 @@ const VideoDetail = (props) => {
         if(mediaSource.readyState === 'open') {
 
             console.log("SOURCE BUFFER: ", mediaSource.sourceBuffers)
+
             sourceBuffer = mediaSource.addSourceBuffer(mimeCodec)
 
             sourceBuffer.appendBuffer(new Uint8Array(vidBlob));
-            console.log("SEEKABLE: ", videoRef.current.seekable)
+
             sourceBuffer.addEventListener('updateend', function (e) {
                 if (!sourceBuffer.updating && mediaSource.readyState === 'open') {
+                    videoRef.current.play()
 
-                  videoRef.current.play()
                 }
             });
 
+
+
         }
+
+
     }
 
 
+    const sourceClose  = event => {
+       if (mediaSource.sourceBuffers.length) {
+        mediaSource.removeSourceBuffer(mediaSource.sourceBuffers[0])
+       }
+    }
 
 
     const setMediaSource = async () => {
@@ -208,6 +218,8 @@ const VideoDetail = (props) => {
         videoRef.current.src = URL.createObjectURL(mediaSource);
 
         mediaSource.addEventListener('sourceopen', sourceOpen);
+
+        mediaSource.addEventListener("sourceclose", sourceClose);
 
     }
 
@@ -440,27 +452,61 @@ const VideoDetail = (props) => {
         }).catch(error=> console.log(error))
     }
 
-    const handleKeyPress = (event) => {
-        event.preventDefault();
-        if (event.ctrlKey && event.key == "l") {
-            console.log("You have succeeded!")
+
+    const handleVideoError = event => {
+        switch(event.target.error.code) {
+            case event.target.error.MEDIA_ERR_ABORTED:
+                setError("You aborted the video playback");
+                break;
+            case event.target.error.MEDIA_ERR_NETWORK:
+                setError("A network error occurred while downloading the video")
+                break;
+            case event.target.error.MEDIA_ERR_DECODE:
+                setError("The video playback was aborted due to corruption problems or due to features the browser does not support");
+                break;
+            case event.target.error.MEDIA_ERR_SRC_NOT_SUPPORTED:
+                setError("The video could not be loaded, either because the server or network failed or because the format is not supported.")
+                break;
+            default:
+                setError("An unknown error occurred");
+                break;
         }
     }
 
+    const setVideoState = event => {
+        playPauseVideo(event)
+    }
+
+    const handleControlsContainer = event => {
+        event.stopPropagation();
+    }
+
+
+    const handleAbortedVideo = event => {
+        console.log("handling aborted video")
+        if (mediaSource.sourceBuffers.length) {
+            mediaSource.removeSourceBuffer(mediaSource.sourceBuffers[0]);
+        }
+    }
 
     return (
         <Navbar>
             <div className="video_template">
                 <div className="video_content">
                     <div className="left-section-video">
-                        <div ref={videoContainer} className="video-container paused" data-volume="high">
-                            <div className="lds-ring">
-                              <div></div>
-                              <div></div>
-                              <div></div>
-                              <div></div>
+                        <div onClick={setVideoState} ref={videoContainer} className="video-container paused" data-volume="high">
+                            <div className="actionBtns">
+                                <div className="lds-ring">
+                                    <div></div>
+                                    <div></div>
+                                    <div></div>
+                                    <div></div>
+                                </div>
+                                <div>
+                                    <BsFillPlayBtnFill style={{ fontSize: 80, color:"crimson" }} />
+                                </div>
                             </div>
-                            <div className="video-controls-container">
+                            <div onClick={handleControlsContainer} className="video-controls-container">
 
                                 <div onMouseUp={toggleScrubbing} onClick={updateTimeline} onMouseMove={handleTimelineUpdate} ref={timelineContainer} onMouseDown={toggleScrubbing} className="timeline-container">
                                     <div className="timeline">
@@ -510,13 +556,13 @@ const VideoDetail = (props) => {
                                     </div>
                                     <Tooltip title="Subtitles/closed captions" placement="top">
                                         <button className="captions-btn">
-                                            <MdSubtitles style={{ fontSize:25 }} />
+                                            <MdSubtitles style={{ fontSize:30 }} />
                                         </button>
                                     </Tooltip>
 
                                     <Tooltip title="Settings" placement="top">
                                         <button className="settings-btn">
-                                            <ImCog style={{ fontSize: 20 }} />
+                                            <ImCog style={{ fontSize: 25 }} />
                                         </button>
                                     </Tooltip>
                                     <button onClick={changePlaybackSpeed} className="speed-btn wide-btn">
@@ -531,24 +577,24 @@ const VideoDetail = (props) => {
 
                                     <Tooltip title="Miniplayer" placement="top">
                                     <button onClick={toggleMiniPlayer} className="mini-player-btn">
-                                        <MdPictureInPictureAlt style={{ fontSize:25 }} />
+                                        <MdPictureInPictureAlt style={{ fontSize:30 }} />
                                     </button>
                                     </Tooltip>
 
                                     <Tooltip title="Full screen" placement="top">
                                         <button onClick={handleFullScreen} className="full-screen-btn">
-                                            <MdFullscreen style={{ fontSize:25 }} />
+                                            <MdFullscreen style={{ fontSize:33 }} />
                                         </button>
                                     </Tooltip>
 
                                     <Tooltip title="Exit full screen" placement="top">
                                         <button onClick={handleFullScreen} className="exit-full-screen-btn">
-                                            <MdOutlineFullscreenExit style={{ fontSize: 25 }}/>
+                                            <MdOutlineFullscreenExit style={{ fontSize: 33 }}/>
                                         </button>
                                     </Tooltip>
                                 </div>
                             </div>
-                            <video onLoadedMetadata={handleLoadedMetadata} crossOrigin="anonymous" src={""} onTimeUpdate={handleTimeUpdate} onLoadedData={handleLoadedData} controls={false} onPause={handlePause} onPlay={handlePlay} ref={videoRef} className="video">
+                            <video onAbort={handleAbortedVideo} poster={video.thumbnail} onError={handleVideoError} onLoadedMetadata={handleLoadedMetadata} crossOrigin="anonymous" src={""} onTimeUpdate={handleTimeUpdate} onLoadedData={handleLoadedData} controls={false} onPause={handlePause} onPlay={handlePlay} ref={videoRef} className="video">
 
                             </video>
                         </div>
@@ -567,8 +613,8 @@ const VideoDetail = (props) => {
                                 </div>
 
                                 <ButtonGroup sx={{ borderRadius:"50px", backgroundColor:"#eee", color:"black", fontSize: 14}} size="small" variant="contained" aria-label="outlined primary button group">
-                                    <Button variant="outline" sx={{ borderRadius:"50px", backgroundColor:"#eee", color:"black", fontSize: 12, fontWeight:"bold"}} startIcon={<span className="pi pi-thumbs-up"></span>}>4.0k</Button>
-                                    <Button variant="outline" sx={{ borderRadius:"50px", backgroundColor:"#eee", color:"black", fontSize: 12, fontWeight:"bold"}} startIcon={<span className="pi pi-thumbs-down"></span>}></Button>
+                                    <Button variant="outline" sx={{ borderRadius:"50px", backgroundColor:"#eee", color:"black", fontSize: 12, fontWeight:"bolder"}} startIcon={<span className="pi pi-thumbs-up"></span>}>{customizeLikes(video.likes)}</Button>
+                                    <Button variant="outline" sx={{ borderRadius:"50px", backgroundColor:"#eee", color:"black", fontSize: 12, fontWeight:"bolder"}} startIcon={<span className="pi pi-thumbs-down"></span>}></Button>
                                 </ButtonGroup>
 
                                 <Button sx={{ borderRadius:"50px", backgroundColor:"#eee", color:"black", fontSize: 12, fontWeight:"bold"}} size="large" startIcon={<ShareIcon style={{ padding:0, margin:0 }} />}>Share</Button>
@@ -587,7 +633,7 @@ const VideoDetail = (props) => {
                                     <Avatar src={IsAvailable(props.user) && props.user.avatar} sx={{ bgcolor: "#4CAF50", padding:0, marginRight:"5px" }}>{IsAvailable(props.user) && props.user.first_name.charAt(0)}</Avatar>
 
                                     <div className="input-artifact">
-                                        <div onKeyDown={handleKeyPress} ref={textInputRef} onPaste={handlePaste} onInput={handleEnterComment} role="textbox" className="comment-input-section" contentEditable={true} aria-label="Add a comment..."></div>
+                                        <div ref={textInputRef} onPaste={handlePaste} onInput={handleEnterComment} role="textbox" className="comment-input-section" contentEditable={true} aria-label="Add a comment..."></div>
                                         <div className="comment-actions">
                                             <span className="emoji-pack"><BsEmojiLaughing style={{ fontSize:20 }} /></span>
 

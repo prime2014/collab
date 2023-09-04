@@ -1,15 +1,12 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useLayoutEffect, useState } from "react";
 import StudioNavbar from "../../common/StudioNavbar";
 import { Layout, Menu } from "antd";
-import PersonOutlineOutlinedIcon from '@mui/icons-material/PersonOutlineOutlined';
 import SourceIcon from '@mui/icons-material/Source';
 import AnalyticsOutlinedIcon from '@mui/icons-material/AnalyticsOutlined';
 import CommentOutlinedIcon from '@mui/icons-material/CommentOutlined';
 import SubtitlesOutlinedIcon from '@mui/icons-material/SubtitlesOutlined';
 import PodcastsOutlinedIcon from '@mui/icons-material/PodcastsOutlined';
 import TuneOutlinedIcon from '@mui/icons-material/TuneOutlined';
-import LaptopOutlinedIcon from '@mui/icons-material/LaptopOutlined';
-import NotificationsOutlinedIcon from '@mui/icons-material/NotificationsOutlined';
 import CopyrightOutlinedIcon from '@mui/icons-material/CopyrightOutlined';
 import AttachMoneyOutlinedIcon from '@mui/icons-material/AttachMoneyOutlined';
 import LibraryAddCheckOutlinedIcon from '@mui/icons-material/LibraryAddCheckOutlined';
@@ -71,7 +68,7 @@ const Channel = props => {
 
     }
 
-    useEffect(()=>{
+    useLayoutEffect(()=>{
 
         setSelector(channelType ? channelType.toString() : "2")
         setTableTabs(tabChoice ? tabChoice.toString() : "1")

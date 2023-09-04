@@ -1,7 +1,9 @@
 import { postAPI } from "../services/post/post.service";
 import {
     getPrivateChannel,
-    setSingleVideo
+    setSingleVideo,
+    setChannelVideos,
+    addVideoToChannel
 } from "./action";
 
 
@@ -24,6 +26,30 @@ export const getSingleVideo = id => {
             if (response) {
                 return response;
             }
+        } catch(error) {
+            return error;
+        }
+    }
+}
+
+
+export const getChannelVideos = (offset, channel_id, limit) => {
+    return async dispatch => {
+        try {
+            let response = await postAPI.getChannelVideos(offset, channel_id, limit);
+            if (response) dispatch(setChannelVideos(response));
+        } catch(error) {
+            return error;
+        }
+    }
+}
+
+export const createPost = (data) => {
+    return async dispatch => {
+        try {
+            let response = await postAPI.updatePost(data);
+            if (response) dispatch(addVideoToChannel(response))
+            return response;
         } catch(error) {
             return error;
         }
